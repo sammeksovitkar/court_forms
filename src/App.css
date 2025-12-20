@@ -81,7 +81,7 @@
 
 /* प्रिंट लेआउटसाठी स्टाईल्स (PrintLayout.js) */
 .data-placeholder {
-    text-decoration: underline;
+    /* text-decoration: underline; */
     font-weight: bold;
 }
 

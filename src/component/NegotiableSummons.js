@@ -43,7 +43,7 @@ const AccusedSummonsDocument = ({ data }) => {
 
                 {/* तक्रारदार आणि आरोपी माहिती */}
                 <div style={{ marginTop: '10px', marginBottom: '10px', padding: '0 3mm' }}>
-                    <p style={{marginBottom: '5px', fontWeight: 'bold'}}>तक्रारदाराचे नाव: <span className="data-placeholder">{data.complainantName}</span></p>
+                    <p style={{marginBottom: '5px', fontWeight: 'bold',textAlign:"right"}}>तक्रारदाराचे नाव व पत्ता: <span className="data-placeholder">{data.complainantName}</span></p>
                     <p style={{marginBottom: '5px', fontWeight: 'bold'}}>प्रति,</p>
                     {/* पोलीस निरीक्षक */}
                     <p style={{marginBottom: '5px'}}>पोलीस निरीक्षक,</p>
@@ -79,7 +79,7 @@ const AccusedSummonsDocument = ({ data }) => {
                     <p className="instruction-paragraph">
                         आज, दिनांक <span className="data-placeholder" style={{fontWeight: 'bold'}}>{formatDateToIndian(data.currentDate)}</span> रोजी माझ्या सहीने आणि कोर्टाच्या शिक्क्यानिशी दिले.
                     </p>
-                     <p  className="instruction-paragraph" style={{ marginTop: '30px',marginLeft:"20px",  }}>आदेशावरून,</p>
+                     {/* <p  className="instruction-paragraph" style={{ marginTop: '30px',marginLeft:"200px", textAlign:"right", }}>आदेशावरून,</p> */}
                 </div>
 
                 {/* तळटीप/स्वाक्षरी ब्लॉक */}
@@ -93,7 +93,8 @@ const AccusedSummonsDocument = ({ data }) => {
                         display: 'inline-block',
                         float: 'right' // Ensures it stays right and wraps tightly around content
                     }}> 
-                      
+        
+                      <p style={{marginBottom: '0', marginTop: '0', textAlign: 'center' ,marginBottom:"50px"}}>आदेशावरून,</p>
                         <p style={{marginBottom: '0', marginTop: '0', textAlign: 'center'}}>सहायक अधीक्षक</p>
                         <p style={{marginBottom: '0', marginTop: '0', textAlign: 'center'}}>दिवाणी व फौजदारी न्यायालय, <span className="data-placeholder">{data.courtLocation}</span>,</p>
                         <p style={{marginBottom: '0', marginTop: '0', textAlign: 'center'}}>ता. नांदगाव जि. नाशिक (महाराष्ट्र)</p>

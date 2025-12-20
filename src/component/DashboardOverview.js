@@ -1,109 +1,121 @@
+import React from 'react';
+import { BarChart2, Gavel, MapPin } from 'lucide-react';
 
-
-import React, { useState } from 'react';
-import {
-  BarChart2,
-  ClipboardList,
-  Calendar,
-  Users,
-  Gavel,
-  ChevronDown,
-  LogOut,
-  Menu,
-  UserCircle,
-  Briefcase,
-  FileText,
-} from 'lucide-react';
-import DashboardCard from './DashboardCard';
-const DashboardOverview = () => {
-    // न्यायालयाच्या कामकाजाशी संबंधित नमुना सांख्यिकी (Mock statistics)
-    const stats = [
-        { title: 'एकूण प्रलंबित खटले (Total Pending Cases)', value: '1,452', icon: <Briefcase size={28} />, bgColor: 'bg-indigo-600', textColor: 'white' },
-        { title: 'आज दाखल झालेले नवीन खटले (New Cases Filed Today)', value: '17', icon: <FileText size={28} />, bgColor: 'bg-teal-600', textColor: 'white' },
-        { title: 'पुढील ७ दिवसांतील सुनावण्या (Hearings in Next 7 Days)', value: '89', icon: <Calendar size={28} />, bgColor: 'bg-yellow-600', textColor: 'white' },
-        { title: 'कर्मचारी उपस्थिती (Staff Attendance)', value: '92%', icon: <Users size={28} />, bgColor: 'bg-red-600', textColor: 'white' },
-    ];
+// Added default empty object to avoid destructuring error
+const DashboardOverview = ({ courtConfig = {}, setCourtConfig }) => {
     
-    const caseSplit = [
-        { type: 'दिवाणी (Civil)', count: 580, color: '#3B82F6', percentage: '40%' },
-        { type: 'फौजदारी (Criminal)', count: 872, color: '#EF4444', percentage: '60%' },
+    // Safety: If courtConfig is missing, use defaults to prevent crash
+    const { 
+        language = 'marathi', 
+        courtLevel = '', 
+        courtVillage = '', 
+        taluka = '', 
+        district = '', 
+        policeStation = '' 
+    } = courtConfig;
+
+    const courtLevels = [
+        { mr: "प्रमुख जिल्हा व सत्र न्यायाधिश", en: "Principal District & Sessions Judge" },
+        { mr: "अतिरिक्त जिल्हा व सत्र न्यायाधिश", en: "Additional District & Sessions Judge" },
+        { mr: "अपर जिल्हा व अतिरिक्त सत्र न्यायाधिश", en: "Ad-hoc District & Additional Sessions Judge" },
+        { mr: "तदर्थ जिल्हा व अतिरिक्त सत्र न्यायाधिश", en: "Joint District & Additional Sessions Judge" },
+        { mr: "दिवाणी न्यायाधिश वरिष्ठ स्तर", en: "Civil Judge Senior Division" },
+        { mr: "मुख्य न्यायदंडाधिकारी", en: "Chief Judicial Magistrate" },
+        { mr: "दिवाणी न्यायाधिश वरिष्ठ स्तर व अतिरीक्त मुख्य न्यायदंडाधिकारी", en: "Civil Judge Senior Division & Additional Chief Judicial Magistrate" },
+        { mr: "दिवाणी न्यायाधिश कनिष्ठ स्तर व न्यायदंडाधिकारी प्रथम वर्ग", en: "Civil Judge Junior Division & Judicial Magistrate First Class" },
+        { mr: "न्यायदंडाधिकारी प्रथम वर्ग, लोहमार्ग न्यायालय", en: "Judicial Magistrate First Class, Railway Court" },
+        { mr: "न्यायदंडाधिकारी प्रथम वर्ग, मोटर वाहन न्यायालय", en: "Judicial Magistrate First Class, Motor Vehicle Court" },
     ];
+
+    const getOutputString = () => {
+        if (!courtLevel) return language === 'marathi' ? "कृपया माहिती भरा..." : "Please fill details...";
+        const tLabel = language === 'marathi' ? "तालुका " : "Taluka ";
+        const dLabel = language === 'marathi' ? "जिल्हा " : "District ";
+        
+        let output = courtLevel;
+        if (courtVillage) output += `, ${courtVillage}`;
+        if (taluka) output += `, ${tLabel}${taluka}`;
+        if (district) output += `, ${dLabel}${district}`;
+        return output;
+    };
 
     return (
-        <div className="space-y-8 p-4">
-            {/* सांख्यिकी कार्ड्स (Statistics Cards) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {stats.map((stat, index) => (
-                    <DashboardCard key={index} {...stat} />
-                ))}
-            </div>
-
-            {/* खटला वितरण आणि वेळापत्रक (Case Distribution and Schedule) */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* १. प्रलंबित खटला वितरण (Pending Case Distribution - Mock Chart) */}
-                <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-2xl border-l-8 border-indigo-500">
-                    <h3 className="text-xl font-semibold text-gray-700 mb-8 flex items-center border-b pb-3">
-                        <BarChart2 className="mr-2 text-indigo-500" size={20} />
-                        खटला वितरण (Pending Case Distribution Ratio)
-                    </h3>
-                    <div className="h-64 flex flex-col justify-center items-center">
-                        <div className="w-48 h-48 rounded-full bg-gray-100 flex items-center justify-center relative shadow-inner">
-                            {/* नमुना पाई चार्ट (Mock Pie Chart) */}
-                            <div 
-                                className="absolute w-full h-full rounded-full"
-                                style={{
-                                    backgroundImage: 'conic-gradient(#3B82F6 0 40%, #EF4444 40% 100%)'
-                                }}
-                            ></div>
-                            <div className="w-28 h-28 rounded-full bg-white shadow-lg flex flex-col items-center justify-center ring-4 ring-gray-100">
-                                <span className="text-xl font-extrabold text-gray-800">१००%</span>
-                                <span className="text-xs text-gray-500">एकूण</span>
-                            </div>
-                        </div>
-                        <div className="mt-6 flex space-x-6">
-                            {caseSplit.map((item, index) => (
-                                <div key={index} className="flex items-center p-2 rounded-lg bg-gray-50">
-                                    <span className={`w-3 h-3 rounded-full mr-2`} style={{ backgroundColor: item.color }}></span>
-                                    <span className="text-sm text-gray-700">{item.type}: <span className="font-bold text-indigo-600">{item.percentage}</span></span>
-                                </div>
-                            ))}
-                        </div>
+        <div className="space-y-6 animate-in fade-in duration-500">
+            <div className="bg-white p-6 rounded-2xl shadow-md border-t-4 border-indigo-600">
+                <div className="flex justify-between items-center mb-6 border-b pb-4">
+                    <h2 className="text-xl font-bold flex items-center gap-2">
+                        <Gavel className="text-indigo-600" /> {language === 'marathi' ? 'न्यायालयीन सेटिंग्ज' : 'Court Settings'}
+                    </h2>
+                    
+                    {/* Language Switcher */}
+                    <div className="flex bg-gray-100 p-1 rounded-lg">
+                        <button 
+                            onClick={() => setCourtConfig({ language: 'marathi' })} 
+                            className={`px-4 py-1 rounded-md transition ${language === 'marathi' ? 'bg-white shadow text-indigo-600 font-bold' : 'text-gray-500'}`}
+                        > मराठी </button>
+                        <button 
+                            onClick={() => setCourtConfig({ language: 'english' })} 
+                            className={`px-4 py-1 rounded-md transition ${language === 'english' ? 'bg-white shadow text-indigo-600 font-bold' : 'text-gray-500'}`}
+                        > English </button>
                     </div>
                 </div>
 
-                {/* २. आजचे सुनावणी वेळापत्रक (Today's Hearing Schedule - Mock) */}
-                <div className="bg-white p-6 rounded-2xl shadow-2xl border-l-8 border-teal-500">
-                    <h3 className="text-xl font-semibold text-gray-700 mb-4 flex items-center border-b pb-3">
-                        <Calendar className="mr-2 text-teal-500" size={20} />
-                        आजची सुनावणी यादी
-                    </h3>
-                    <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
-                        {[
-                            { time: 'स. १०:३०', case: 'RCC 145/2024', type: 'फौजदारी', judge: 'न्यायाधीश पाटील' },
-                            { time: 'स. ११:००', case: 'SCC 22/2023', type: 'दिवाणी', judge: 'न्यायाधीश कुलकर्णी' },
-                            { time: 'स. ११:३०', case: 'RCC 87/2024', type: 'फौजदारी', judge: 'न्यायाधीश पाटील' },
-                            { time: 'दु. ०२:००', case: 'SCC 40/2024', type: 'दिवाणी', judge: 'न्यायाधीश कुलकर्णी' },
-                            { time: 'दु. ०२:३०', case: 'MISC 12/2024', type: 'इतर', judge: 'न्यायाधीश पाटील' },
-                            { time: 'दु. ०३:००', case: 'LCS 55/2023', type: 'दिवाणी', judge: 'न्यायाधीश कुलकर्णी' },
-                        ].map((hearing, index) => (
-                            <div key={index} className="p-3 bg-gray-50 rounded-lg border-l-4 border-indigo-400 hover:bg-indigo-50 transition transform hover:scale-[1.01] cursor-pointer">
-                                <p className="text-lg font-bold text-gray-800">{hearing.time} - {hearing.case}</p>
-                                <p className="text-sm text-gray-600 flex justify-between">
-                                    <span className="font-medium text-teal-600">{hearing.type}</span> 
-                                    <span>न्यायाधीश: <span className="font-semibold">{hearing.judge}</span></span>
-                                </p>
-                            </div>
-                        ))}
-                        <div className="text-center pt-3">
-                            <button className="text-indigo-600 text-sm font-semibold hover:underline flex items-center justify-center mx-auto transition duration-150 p-2 rounded-lg hover:bg-indigo-50">
-                                संपूर्ण वेळापत्रक पहा <ChevronDown size={16} className="ml-1" />
-                            </button>
-                        </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* Court Selector */}
+                    <div className="flex flex-col gap-1">
+                        <label className="text-sm font-semibold text-gray-600">{language === 'marathi' ? 'न्यायालयाचा स्तर' : 'Court Level'}</label>
+                        <select 
+                            className="border p-2 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 ring-indigo-200 outline-none"
+                            value={courtLevel} 
+                            onChange={(e) => setCourtConfig({ courtLevel: e.target.value })}
+                        >
+                            <option value="">-- {language === 'marathi' ? 'निवडा' : 'Select'} --</option>
+                            {courtLevels.map((lvl, i) => (
+                                <option key={i} value={language === 'marathi' ? lvl.mr : lvl.en}>{language === 'marathi' ? lvl.mr : lvl.en}</option>
+                            ))}
+                        </select>
                     </div>
+
+                    {/* Village */}
+                    <div className="flex flex-col gap-1">
+                        <label className="text-sm font-semibold text-gray-600">{language === 'marathi' ? 'न्यायालय गाव' : 'Court Village'}</label>
+                        <input type="text" className="border p-2 rounded-lg focus:ring-2 ring-indigo-200 outline-none" value={courtVillage} onChange={(e) => setCourtConfig({ courtVillage: e.target.value })} />
+                    </div>
+
+                    {/* Taluka */}
+                    <div className="flex flex-col gap-1">
+                        <label className="text-sm font-semibold text-gray-600">{language === 'marathi' ? 'तालुका' : 'Taluka'}</label>
+                        <input type="text" className="border p-2 rounded-lg focus:ring-2 ring-indigo-200 outline-none" value={taluka} onChange={(e) => setCourtConfig({ taluka: e.target.value })} />
+                    </div>
+
+                    {/* District */}
+                    <div className="flex flex-col gap-1">
+                        <label className="text-sm font-semibold text-gray-600">{language === 'marathi' ? 'जिल्हा' : 'District'}</label>
+                        <input type="text" className="border p-2 rounded-lg focus:ring-2 ring-indigo-200 outline-none" value={district} onChange={(e) => setCourtConfig({ district: e.target.value })} />
+                    </div>
+
+                    {/* PS */}
+                    <div className="flex flex-col gap-1">
+                        <label className="text-sm font-semibold text-gray-600">{language === 'marathi' ? 'पोलीस स्टेशन' : 'Police Station'}</label>
+                        <input type="text" className="border p-2 rounded-lg focus:ring-2 ring-indigo-200 outline-none" value={policeStation} onChange={(e) => setCourtConfig({ policeStation: e.target.value })} />
+                    </div>
+                </div>
+
+                {/* Final Preview Output */}
+                <div className="mt-8 p-6 bg-gradient-to-br from-indigo-600 to-blue-700 rounded-2xl text-white shadow-xl relative overflow-hidden">
+                    <div className="relative z-10">
+                        <p className="text-xs font-bold text-indigo-200 uppercase tracking-widest mb-2 flex items-center gap-2">
+                             <MapPin size={14} /> {language === 'marathi' ? 'जनरेट केलेले शीर्षक' : 'Generated Heading'}
+                        </p>
+                        <h3 className="text-xl md:text-2xl font-bold">{getOutputString()}</h3>
+                        {policeStation && <p className="mt-2 text-indigo-100 opacity-90">{language === 'marathi' ? 'पोलीस स्टेशन' : 'Police Station'}: {policeStation}</p>}
+                    </div>
+                    {/* Decorative Background Icon */}
+                    <Gavel size={120} className="absolute -right-4 -bottom-4 text-white opacity-10" />
                 </div>
             </div>
         </div>
     );
 };
-export default DashboardOverview
+
+export default DashboardOverview;

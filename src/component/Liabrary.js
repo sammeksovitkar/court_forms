@@ -1,49 +1,94 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import BookList from './BookList';
 import AddBookButton from './AddBookButton';
 import BookForm from './BookForm';
 
-// NEW: Component for handling Edit (PROPS CORRECTED)
+// Helper function to perform local filtering (copied from the conceptual parent component)
+const performLocalFilter = (data, classFilter, searchTerm) => {
+    let filtered = data;
+    const lowerSearch = searchTerm ? searchTerm.toLowerCase() : '';
 
+    // 1. Class Filter
+    if (classFilter && classFilter !== 'All') {
+        filtered = filtered.filter(book => 
+            // Ensures safety when comparing class values
+            String(book.Class || '').toLowerCase() === classFilter.toLowerCase()
+        );
+    }
+
+    // 2. General Search Filter (Local Search)
+    if (lowerSearch) {
+        filtered = filtered.filter(book => 
+            // Check all relevant values for the search term
+            Object.values(book).some(value => 
+                String(value || '').toLowerCase().includes(lowerSearch)
+            )
+        );
+    }
+
+    return filtered;
+};
 
 function Liabrary() {
-    const [books, setBooks] = useState([]);
+    // 🔑 NEW STATE: Holds the full, unfiltered dataset from the server (The local cache)
+    const [allBooks, setAllBooks] = useState([]); 
+    
+    // Existing State: Now holds the currently filtered list being displayed
+    const [books, setBooks] = useState([]); 
+    
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedClass, setSelectedClass] = useState('All');
     const [loading, setLoading] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [bookToEdit, setBookToEdit] = useState(null);
-    const api = process.env.REACT_APP_BACKEND_URL
+    const api = process.env.REACT_APP_BACKEND_URL;
 
-
-    // 🔄 Fetch Books Function - Sends both Class and Search term to the backend
-    const fetchBooks = useCallback(async (classQuery = 'All', searchQuery = '') => { 
+    // 🔑 UPDATED: Fetch Books Function - Fetches ALL books (no filters)
+    const fetchBooks = useCallback(async () => { 
         setLoading(true);
         try {
-            const response = await axios.get(api+`/api/books`, {
-                params: {
-                    search: searchQuery,
-                    class: classQuery
-                }
-            });
+            // CRITICAL CHANGE: Remove the query parameters. Fetch the FULL data list.
+            // The backend MUST be updated to return the full list when no params are given.
+            const response = await axios.get(api + `/api/books`);
            
-            setBooks(response.data);
+            const fullData = response.data;
+            setAllBooks(fullData); // Cache the full data
+            
+            // Apply current filters locally to display initially filtered data
+            const initialFiltered = performLocalFilter(
+                fullData, 
+                selectedClass, 
+                searchTerm
+            );
+            setBooks(initialFiltered);
+            
         } catch (error) {
             console.error('Error fetching books:', error);
+            setAllBooks([]); // Clear data on failure
+            setBooks([]);
         } finally {
             setLoading(false);
         }
-    }, []);
+    // Only dependent on API URL. Search/Class filtering runs after the fetch.
+    }, [api]); 
 
+    // Initial load: Fetch the full list
     useEffect(() => {
-        fetchBooks(selectedClass, searchTerm);
+        fetchBooks();
     }, [fetchBooks]);
     
-    // 🔍 Search Handler - Triggers fetch with current state values
+    // 🔑 NEW: Search Handler - Filters the local `allBooks` state, does NOT call the API.
     const handleSearch = (classQ, searchT) => { 
-        fetchBooks(classQ, searchT);
+        // 1. Update the state for the selectors/inputs to reflect the change
+        setSelectedClass(classQ);
+        setSearchTerm(searchT); 
+        
+        // 2. Perform the filtering on the full cached data
+        const filteredResult = performLocalFilter(allBooks, classQ, searchT);
+        
+        // 3. Update the display list
+        setBooks(filteredResult);
     };
 
     // 🗑️ DELETE Handler
@@ -54,7 +99,8 @@ function Liabrary() {
         try {
             await axios.delete(api+`/api/books/${srNo}`);
             alert(`Book ${srNo} deleted successfully!`);
-            fetchBooks(selectedClass, searchTerm);
+            // 🔑 CRITICAL FIX: Re-fetch ALL books to refresh the cache after modification
+            fetchBooks(); 
         } catch (error) {
             alert(`Error deleting book: ${error.response?.data?.message || 'Server error.'}`);
             console.error('Delete error:', error);
@@ -68,16 +114,17 @@ function Liabrary() {
     };
 
     const handleSaveEdit = async (updatedData) => {
+        console.log(updatedData,"sdf")
         try {
-            console.log(updatedData,"updated data")
             await axios.put(api+`/api/books/${updatedData.SrNo}`, updatedData);
             alert(`Book ${updatedData.SrNo} updated successfully!`);
             setIsEditing(false);
             setBookToEdit(null);
-            fetchBooks(selectedClass, searchTerm);
+            // 🔑 CRITICAL FIX: Re-fetch ALL books to refresh the cache after modification
+            fetchBooks(); 
+            console.log("ccc")
         } catch (error) {
-            console.log("adf ",error)
-             alert(`Error updating book: ${error.response?.data?.message || 'Server error.'}`);
+            //  alert(`Error updating book: ${error.response?.data?.message || 'Server error.'}`);
              console.error('Update error:', error);
         }
     };
@@ -86,6 +133,12 @@ function Liabrary() {
     const handleImport = () => {
         alert('The Import facility is currently a placeholder. It requires backend support.');
     };
+    
+    // Function to run after a new book is added (via AddBookButton/BookForm)
+    const handleBookAdded = () => {
+        // 🔑 CRITICAL FIX: Re-fetch ALL books to refresh the cache after addition
+        fetchBooks();
+    };
 
     return (
         <div style={{ padding: '20px', maxWidth: '1200px', margin: 'auto' }}>
@@ -93,18 +146,19 @@ function Liabrary() {
             
             {/* ADD BOOK BUTTON AT THE TOP */}
             <div style={{ marginBottom: '10px', textAlign: 'right' }}>
-                <AddBookButton onBookAdded={() => fetchBooks(selectedClass, searchTerm)} />
+                {/* 🔑 Pass the new refresh handler */}
+                <AddBookButton onBookAdded={handleBookAdded} /> 
             </div>
 
             {/* BOOK LIST COMPONENT */}
             <BookList
-                books={books}
+                books={books} // This is the filtered list
                 loading={loading}
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
                 selectedClass={selectedClass}
                 setSelectedClass={setSelectedClass}
-                handleSearch={handleSearch} 
+                handleSearch={handleSearch} // This is the new local search function
                 handleImport={handleImport}
                 handleEditClick={handleEditClick}
                 handleDelete={handleDelete}
@@ -118,8 +172,8 @@ function Liabrary() {
                     justifyContent: 'center', alignItems: 'center', zIndex: 1000,
                 }}>
                     <BookForm
-                        initialBook={bookToEdit} // This activates the Edit Mode
-                        onBookUpdated={handleSaveEdit} // Function to call on successful update
+                        initialBook={bookToEdit}
+                        onBookUpdated={handleSaveEdit}
                         onClose={() => setIsEditing(false)}
                     />
                 </div>

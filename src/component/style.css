@@ -1,6 +1,6 @@
 /* फॉर्मसाठी सामान्य स्टाईल्स */
 .form-container {
-    max-width: 900px;
+    /* max-width: 900px; */
     margin: 20px auto;
     padding: 20px;
     border: 1px solid #ccc;
@@ -81,7 +81,7 @@
 
 /* प्रिंट लेआउटसाठी स्टाईल्स (PrintLayout.js) */
 .data-placeholder {
-    text-decoration: underline;
+    /* text-decoration: underline; */
     font-weight: bold;
 }
 

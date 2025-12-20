@@ -1,167 +1,462 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-// Utility function to convert ISO date (YYYY-MM-DD) to DD/MM/YYYY format
-const formatDateToIndian = (isoDate) => {
-    if (!isoDate || isoDate.length !== 10) return '...............'; // Default placeholder
-    // Expected format is YYYY-MM-DD
-    const parts = isoDate.split('-');
-    if (parts.length === 3) {
-        // Rearrange to DD/MM/YYYY
-        return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    }
-    return isoDate; // Return original if format is unexpected
+// Get today's date in YYYY-MM-DD format
+const today = new Date().toISOString().substring(0, 10);
+
+// ====================================================================================
+// --- 1. DEFAULT DATA STRUCTURES ---
+// ====================================================================================
+
+// Default data in Marathi 
+// important 
+const courtInfo = {
+    policeStation: {
+        mar: 'मनमाड शहर',
+        eng: 'Manmad City'
+    },
+    courtName: {
+        mar: 'न्यायदंडाधिकारी, प्रथम वर्ग, मनमाड शहर ता.नांदगाव जिल्हा नाशिक',
+        eng: 'Judicial Magistrate First Class, Manmad City, Tal. Nandgaon, Dist. Nashik'
+    },
+    talukaDist: {
+        mar: "ता.नांदगाव, जिल्हा नाशिक",
+        eng: "Tal. Nandgaon, Dist. Nashik"
+    },
+    policeStationTaluka: {
+        mar: 'नांदगाव',
+        eng: "Nandgaon"
+    },
+    policeStationDistrict: {
+        mar: 'नाशिक',
+        eng: "Nashik"
+    },
 };
 
-// Component for the printable document content (Arrest Warrant - CrPC 75)
-const ArrestWarrantDocument = ({ data }) => {
+// Assuming 'today' is a defined variable (e.g., const today = new Date().toLocaleDateString('en-GB');)
+
+const defaultDataMarathi = {
+    courtName: courtInfo.courtName.mar,
+    talukaDist: courtInfo.talukaDist.mar,
+    warrantType: '', 
+    caseType: '',     
+    caseNo: '',
+    policeStationName: courtInfo.policeStation.mar,
+    policeStationTaluka: courtInfo.policeStationTaluka.mar,
+    policeStationDistrict: courtInfo.policeStationDistrict.mar,
+    accusedName: '',
+    accusedAddress: '',
+    act: '',
+    section: '',
+    appearanceDate: today, // Placeholder for the 'today' variable
+    personalBondAmount: '', 
+    suretyAmount1: '', 
+    suretyAmount2: '', 
+    issueDate: today, // Placeholder for the 'today' variable
+    courtLocationFooter: courtInfo.policeStation.mar, // Using police station name for footer location
+    date: "दिनांक : ",
+    outWordNo: "जा. क्र :"
+};
+
+// Translated default data for English
+const defaultDataEnglish = {
+    courtName: courtInfo.courtName.eng,
+    talukaDist: courtInfo.talukaDist.eng,
+    warrantType: '', 
+    caseType: '',     
+    caseNo: '',
+    policeStationName: courtInfo.policeStation.eng,
+    policeStationTaluka: courtInfo.policeStationTaluka.eng,
+    policeStationDistrict: courtInfo.policeStationDistrict.eng,
+    accusedName: '',
+    accusedAddress: '',
+    act: '',
+    section: '',
+    appearanceDate: today, // Placeholder for the 'today' variable
+    personalBondAmount: '', 
+    suretyAmount1: '', 
+    suretyAmount2: '', 
+    issueDate: today, // Placeholder for the 'today' variable
+    courtLocationFooter: courtInfo.policeStation.eng, // Using police station name for footer location
+    date: "Date :",
+    outWordNo: "O.No :"
+};
+// ====================================================================================
+// --- 2. TRANSLATION MAPS AND UTILITIES ---
+// ====================================================================================
+
+const text = {
+    Marathi: {
+        header: 'पकडण्याचा वॉरंट माहिती भरा (Arrest Warrant Details - CrPC 75)',
+        warrantType: '१. वॉरंटचा प्रकार (Warrant Type)',
+        typeNBW: 'N.B.W. (Non Bailable Warrant - अजामीनपात्र)',
+        typeBW: 'B.W. (Bailable Warrant - जामीनपात्र)',
+        typeAW: 'A.W. (Arrest Warrant - अटक)',
+        caseType: '२. खटल्याचा प्रकार (Case Type)',
+        judicialDetails: '३. न्यायालयीन तपशील',
+        courtName: 'न्यायालय/वॉरंट जारी करणारे (Court/Issuing Authority):',
+        caseNo: 'खटला क्रमांक (Case No.):',
+        courtLocation: 'कोर्टाचे ठिकाण (Court Location):',
+        accusedOffenseDetails: '४. आरोपी आणि गुन्हा तपशील',
+        accusedName: 'आरोपीचे नांव (Accused Name):',
+        accusedAddress: 'आरोपीचा पत्ता (Accused Address):',
+        act: 'गुन्हा कायदा (Act):',
+        selectOrAddAct: 'निवडा किंवा जोडा (Select or Add Act)',
+        section: 'कलम क्रमांक (Section):',
+        policeStationName: 'पोलीस स्टेशनचे नांव (Police Station):',
+        policeStationTaluka: 'पोलीस स्टेशन तालुका (Taluka):',
+        policeStationDistrict: 'पोलीस स्टेशन जिल्हा (District):',
+        bailSuretyDetails: '५. तारण/जामीन तपशील (Bail/Surety Details)',
+        appearanceDate: 'न्यायालयात हजर होण्याची तारीख (Appearance Date):',
+        personalBondAmount: 'स्वतःचे तारण रक्कम (Personal Bond Amount - रु.):',
+        suretyAmount1: 'जामीनदार रक्कम (Surety Amount - १ जामीन):',
+        suretyAmount2: 'प्रत्येक जामीनदार रक्कम (Surety Amount - २ जामीन):',
+        issueDateSection: 'वॉरंट जारी करण्याची तारीख',
+        placeholderSection: 'उदा. 302, 138',
+        printButton: 'वॉरंट प्रिंट करा (Print Warrant)',
+        mandatoryFields: 'कृपया वॉरंट प्रकार, खटला प्रकार, आरोपीचे नांव आणि कलम क्रमांक भरल्याशिवाय प्रिंट करू नका.',
+    },
+    English: {
+        header: 'Arrest Warrant Details (CrPC 75)',
+        warrantType: '1. Warrant Type',
+        typeNBW: 'N.B.W. (Non Bailable Warrant)',
+        typeBW: 'B.W. (Bailable Warrant)',
+        typeAW: 'A.W. (Arrest Warrant)',
+        caseType: '2. Case Type',
+        judicialDetails: '3. Judicial Details',
+        courtName: 'Court/Issuing Authority:',
+        caseNo: 'Case Number:',
+        courtLocation: 'Court Location (Footer):',
+        accusedOffenseDetails: '4. Accused and Offense Details',
+        accusedName: 'Name of Accused:',
+        accusedAddress: 'Address of Accused:',
+        act: 'Act:',
+        selectOrAddAct: 'Select or Add Act',
+        section: 'Section Number:',
+        policeStationName: 'Police Station Name:',
+        policeStationTaluka: 'Police Station Taluka:',
+        policeStationDistrict: 'Police Station District:',
+        bailSuretyDetails: '5. Bail/Surety Details',
+        appearanceDate: 'Date of Appearance:',
+        personalBondAmount: 'Personal Bond Amount (Rs.):',
+        suretyAmount1: 'Surety Amount (One Surety):',
+        suretyAmount2: 'Surety Amount (Two Sureties, Each):',
+        issueDateSection: 'Warrant Issue Date',
+        placeholderSection: 'e.g., 302, 138',
+        printButton: 'Print Warrant',
+        mandatoryFields: 'Please fill in Warrant Type, Case Type, Accused Name, and Section before printing.',
+    }
+};
+
+const actOptions = [
+    { value: "भारतीय दंड संहिता", label: "Indian Penal Code" },
+    { value: "फौजदारी प्रक्रिया संहिता", label: "Criminal Procedure Code" },
+    { value: "भारतीय न्याय संहिता", label: "Bharatiya Nyaya Sanhita" },
+    { value: "भारतीय नागरिक सुरक्षा संहिता", label: "Bharatiya Nagarik Suraksha Sanhita" },
+    { value: "Negotiable Instruments Act", label: "Negotiable Instruments Act" },
+    { value: "Gambling Act", label: "Gambling Act" },
+    // { value: "Bombay Prohibition", label: "Bombay Prohibition" },
+    { value: "महाराष्ट्र दारूबंदी अधिनियम", label: "Maharashtra Prohibition Act" },
+     { value: "शस्त्रास्त्र कायदा", label: "Arms Act" },
+{ value: "महाराष्ट जुगार प्रतिबंध अधिनियम", label: "Bombay Prevention of Gambling Act" },
+      
+      
+
     
-    // Helper to extract day, month, year for the issue date section
-    const getIssueDateParts = (isoDate) => {
-        const dateString = formatDateToIndian(isoDate);
-        if (dateString.includes('/')) {
-             const parts = dateString.split('/');
-             // Ensure parts has at least 3 elements before accessing indices
-             return { 
-                 day: parts[0] || '..........', 
-                 month: parts[1] || '..........', 
-                 year: parts[2] || '..........' 
-             };
+
+    
+];
+
+const formatDate = (isoDate) => {
+    if (!isoDate || isoDate.length !== 10) return '...............';
+    const parts = isoDate.split('-');
+    if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return isoDate;
+};
+
+// Helper to translate fixed court data for the document header/footer
+const getTranslatedFixedData = (data, language) => {
+    if (language === 'Marathi') {
+        return {
+            courtName: data.courtName,
+            talukaDist: data.talukaDist, 
+            courtLocationFooter: data.courtLocationFooter,
+            date:data.date,
+            outWordNo:data.outWordNo
+        };
+    }
+    
+    // Construct English structured names from the data inputs
+    const courtLevel = 'Judicial Magistrate First Class,';
+    const courtLocation = `${data.courtLocationFooter} City,`;
+    const taluka = `Tal. ${data.policeStationTaluka},`;
+    const district = `Dist. ${data.policeStationDistrict}`;
+
+    return {
+        courtName: `${courtLevel} ${courtLocation} ${taluka} ${district}`,
+        talukaDist: `${district}, ${taluka.replace(',', '')}`, 
+        courtLocationFooter: data.courtLocationFooter,
+        date:data.date,
+        outWordNo:data.outWordNo
+    };
+};
+
+// Utility to merge new language defaults while preserving user input
+const mergeData = (currentData, newDefaults) => {
+    // Determine the set of defaults the CURRENT data state is based on
+    const originalDefaults = currentData.language === 'Marathi' ? defaultDataMarathi : defaultDataEnglish;
+    
+    const merged = {};
+    for (const key in newDefaults) {
+        // Condition: If the current value is blank OR if it matches the ORIGINAL default value (meaning user didn't change it),
+        // then we apply the new default data value for the new language.
+        if (currentData[key] === '' || currentData[key] === originalDefaults[key]) {
+             merged[key] = newDefaults[key];
+        } else {
+             // Otherwise, we keep the user's input
+             merged[key] = currentData[key];
         }
-        return { day: '..........', month: '..........', year: '..........' };
+    }
+    return merged;
+};
+
+// --- WARRANT CONTENT GENERATOR (Handles main body translation) ---
+const getWarrantContent = (data, language) => {
+    const formattedIssueDate = formatDate(data.issueDate);
+    const formattedAppearanceDate = formatDate(data.appearanceDate);
+    const warrantUserType = data.warrantType === "A.W." ? 
+        (language === 'Marathi' ? 'सामनेवाला' : 'the person concerned') : 
+        (language === 'Marathi' ? 'आरोपी' : 'the accused');
+
+    const descriptiveWarrant = (type) => {
+        if (language === 'Marathi') {
+            if (type === 'B.W.') return 'Bailable Warrant (जामीनपात्र अधिपत्र)';
+            if (type === "N.B.W.") return 'Non Bailable Warrant (अजामीनपात्र अधिपत्र)';
+            if (type === "A.W.") return "Arrest Warrant (पकड वॉरंट)";
+        } else {
+            if (type === 'B.W.') return 'Bailable Warrant';
+            if (type === "N.B.W.") return 'Non Bailable Warrant';
+            if (type === "A.W.") return "Arrest Warrant";
+        }
+        return '';
     };
 
-    const issueDateParts = getIssueDateParts(data.issueDate);
-    const appearanceYear = data.appearanceDate ? new Date(data.appearanceDate).getFullYear().toString() : '....';
+    const offenseDetail = data.act && data.section
+        ? (language === 'Marathi' ? `${data.act} कलम ${data.section}` : `${data.act} Section ${data.section}`)
+        : data.act || data.section || '...................';
 
-    // Descriptive name for the Warrant Type
-    const descriptiveWarrantType = data.warrantType === 'B.W.' 
-        ? 'Bailable Warrant (जामीनपात्र वॉरंट)' 
-        : 'Non Bailable Warrant (अजामीनपात्र वॉरंट)';
+    // Marathi Content Structure
+    if (language === 'Marathi') {
+        return {
+            language: 'Marathi',
+            crpcRef: '(क्रि. प्रो. को. क. ७५ पहा)',
+            to: 'प्रति,',
+            policeInspector: 'पोलीस निरीक्षक,',
+            policeStation: `${data.policeStationName} पोलीस स्टेशन,`,
+            talukaDistrict: `ता. ${data.policeStationTaluka} जि. ${data.policeStationDistrict} यांस`,
+            mainPara: (
+                <p className="warrant-paragraph" style={{ marginBottom: '15px' }}>
+                    &nbsp;&nbsp;&nbsp; &nbsp; ज्यापेक्षा {warrantUserType}  नामे <span className="data-placeholder bold-text">{data.accusedName}</span> राह.
+                    <span className="data-placeholder bold-text"> &nbsp;{data.accusedAddress} &nbsp;</span> यावर
+                    <span className="data-placeholder bold-text"> &nbsp;{offenseDetail}</span>  &nbsp;या अपराधाचा आरोप आलेला आहे,
+                    त्यापेक्षा तुम्ही सदरहू  {warrantUserType} <span className="data-placeholder bold-text"> &nbsp;&nbsp;{data.accusedName} &nbsp;&nbsp;</span> यास धरून माझ्यापुढे आणावे असा तुम्हास या वॉरंटद्वारे हुकूम केला आहे.
+                    यात लिहिल्याप्रमाणे तुम्ही चुकू नये.
+                </p>
+            ),
+            bailHeader: 'जामीन सूचना (Bail Instruction):',
+            bailPara: (
+                <p className="warrant-paragraph" style={{ margin: '0' }}>
+                    &nbsp;&nbsp;&nbsp; &nbsp;   सदरहू <span className="data-placeholder bold-text"> &nbsp;{data.accusedName} &nbsp;&nbsp;</span> जर तारीख <span className="data-placeholder bold-text">{formattedAppearanceDate}</span>
+                    &nbsp; रोजी माझ्यापुढे हजर होण्याविषयी व मी अन्य रितीने हुकूम येईपर्यंत हजर होत राहतील
+                    याविषयी आपण स्वतः रु. <span className="data-placeholder bold-text">{data.personalBondAmount}</span> रकमेचे तारण लिहून देऊन
+                    रु. <span className="data-placeholder bold-text">{data.suretyAmount1}</span> रकमेचा एक जामीन (अगर रु. <span className="data-placeholder bold-text">{data.suretyAmount2}</span> रकमेचा प्रत्येक असे दोन)
+                    द्याल, तर त्यास सोडून द्यावे.
+                </p>
+            ),
+            issueDate: `आज तारीख ${formattedIssueDate}.`,
+            magistrate: 'न्यायदंडाधिकारी प्रथम वर्ग,',
+            footerTip: <p style={{ marginTop: "100px" }}> <span style={{ fontWeight: "bold" }}>टिप :</span>  सामनेवाल्याने रूपये   <span style={{ fontWeight: "bold" }}>  &nbsp; {data.personalBondAmount}&nbsp;</span> भरल्यास त्यास मुक्त करून रक्कम या न्यायालयाकडे जमा करावी</p>,
+            descriptiveWarrant: descriptiveWarrant(data.warrantType),
+        };
+    }
+
+    // English Content Structure
+    return {
+        language: 'English',
+        crpcRef: '(See Section 75 of CrPC)',
+        to: 'To,',
+        policeInspector: 'The Police Inspector,',
+        policeStation: `${data.policeStationName} Police Station,`,
+        talukaDistrict: `Taluka: ${data.policeStationTaluka}, District: ${data.policeStationDistrict}`,
+        mainPara: (
+            <p className="warrant-paragraph" style={{ marginBottom: '15px' }}>
+                &nbsp;&nbsp;&nbsp; &nbsp; Whereas, the {warrantUserType} named <span className="data-placeholder bold-text">{data.accusedName}</span>, resident of
+                <span className="data-placeholder bold-text"> &nbsp;{data.accusedAddress} &nbsp;</span>, stands charged with the offense of
+                <span className="data-placeholder bold-text"> &nbsp;{offenseDetail}</span>;
+                You are hereby directed to arrest the said {warrantUserType} <span className="data-placeholder bold-text"> &nbsp;&nbsp;{data.accusedName} &nbsp;&nbsp;</span> and produce {data.accusedName.includes(' ') ? 'him/her' : 'them'} before me.
+                Herein fail not.
+            </p>
+        ),
+        bailHeader: 'Bail Instruction:',
+        bailPara: (
+            <p className="warrant-paragraph" style={{ margin: '0' }}>
+                &nbsp;&nbsp;&nbsp; &nbsp;   The said <span className="data-placeholder bold-text"> &nbsp;{data.accusedName} &nbsp;&nbsp;</span> may be released upon his executing a personal bond for the sum of Rs. <span className="data-placeholder bold-text">{data.personalBondAmount}</span>
+                and furnishing one surety for Rs. <span className="data-placeholder bold-text">{data.suretyAmount1}</span> (or two sureties, each for Rs. <span className="data-placeholder bold-text">{data.suretyAmount2}</span>),
+                to appear before me on the <span className="data-placeholder bold-text">{formattedAppearanceDate}</span>, and to continue to appear as directed by me thereafter.
+            </p>
+        ),
+        issueDate: `Dated, this ${formattedIssueDate}.`,
+        magistrate: 'Judicial Magistrate First Class,',
+        footerTip: <p style={{ marginTop: "100px" }}> <span style={{ fontWeight: "bold" }}>Note :</span>  If the person concerned deposits an amount of Rs.   <span style={{ fontWeight: "bold" }}>  &nbsp; {data.personalBondAmount}&nbsp;</span>, he/she may be released and the amount shall be deposited in this Court.</p>,
+        descriptiveWarrant: descriptiveWarrant(data.warrantType),
+    };
+};
+
+
+// --- DOCUMENT COMPONENT ---
+const ArrestWarrantDocument = ({ data, language }) => {
+
+    const content = getWarrantContent(data, language);
+    const translatedFixedData = getTranslatedFixedData(data, language); 
+
+    const courtLocationFooterText = translatedFixedData.courtLocationFooter;
+    const talukaDistText = translatedFixedData.talukaDist;
 
     return (
-        <div className="printable-area" id="print-warrant-content">
+        <div className="printable-area" id="print-warrant-content" style={{ fontFamily: language === 'Marathi' ? 'Lohit Devanagari, Arial Unicode MS, Mangal, sans-serif' : 'Arial, sans-serif' }}>
             <div className="warrant-document">
-                
-                {/* Court and Heading */}
-                <p className="align-center court-title" style={{fontSize:"18px", fontWeight: 'bold', marginBottom: '5px'}}>
-                    <span className="data-placeholder">{data.courtName}</span>
+              {(data.policeStationName !== courtInfo.policeStation.mar && data.policeStationName !== courtInfo.policeStation.eng) ? 
+  <div style={{ lineHeight: "1.7", textAlign: "right", marginBottom: "15px" }}>
+    <p style={{ textAlign: "right" }}> {translatedFixedData.outWordNo}  &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/202</p>
+    <p style={{ textAlign: "right" }}>{translatedFixedData.date} &nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;  &nbsp; /202</p>
+  </div>
+:""}
+                {/* Court and Heading (FIXED FOR TRANSLATION) */}
+                <p className="align-center court-title" style={{ fontSize: "20px", fontWeight: 'bold', textDecoration: "underline", marginBottom: '5px' }}>
+                    <span className="data-placeholder">{translatedFixedData.courtName}</span>
                 </p>
-                <h3 className="align-center court-slogan" style={{fontSize:"20px", marginTop: '5px', marginBottom: '5px', textDecoration: 'underline'}}>
-                    पकडण्याचा वॉरंट
-                </h3>
-                
+
                 {/* Warrant Type and Case Type Display */}
-                <div style={{ marginBottom: '15px', width: '100%', lineHeight: '1.2', textAlign:"center" }}>
-                    <p style={{ margin: '0 0 2px 0', textAlign:"center",fontWeight: 'bold', fontSize: '1.1rem', color: data.warrantType === 'N.B.W.' ? '#880000' : '#006400' }} >
-                        <span className="data-placeholder">{descriptiveWarrantType}</span>
+                <div style={{ marginBottom: '15px', width: '100%', lineHeight: '1.2', textAlign: "center" }}>
+                    <p style={{ margin: '0 0 2px 0', textAlign: "center", fontWeight: 'bold', fontSize: '1.1rem', color: data.warrantType === 'N.B.W.' ? '#880000' : '#006400' }} >
+                        <span className="data-placeholder">{content.descriptiveWarrant}</span>
                     </p>
-                    <p style={{ margin: '0', textAlign:"center",fontSize: '10pt', fontWeight: 'bold'}}>
-                        {data.caseType} खटला क्र. (Case No.): <span className="data-placeholder">{data.caseNo}</span>
-                    </p>
-                    <p style={{ margin: '0', fontSize: '10pt',textAlign:"center"}}>
-                        (क्रि. प्रो. को. क. ७५ पहा)
+                    <p style={{ margin: '0', fontSize: '10pt', textAlign: "center" }}>
+                        {content.crpcRef}
                     </p>
                 </div>
+                <p style={{ margin: '0', textAlign: "right", fontSize: '12pt', fontWeight: 'bold' }}>
+                    Case No. &nbsp; {data.caseType}: <span className="data-placeholder">{data.caseNo}</span>
+                </p>
 
                 {/* To: Police Inspector */}
                 <div style={{ marginTop: '10px', marginBottom: '10px', padding: '0 0mm' }}>
-                    <p style={{marginBottom: '5px', fontWeight: 'bold'}}>प्रति,</p>
-                    <p style={{marginBottom: '5px'}}>पोलीस निरीक्षक,</p>
-                    <p style={{marginBottom: '5px'}}>
-                        <span className="data-placeholder">{data.policeStationName}</span> पोलीस स्टेशन,
+                    <p style={{ marginBottom: '5px', fontWeight: 'bold' }}>{content.to}</p>
+                    <p style={{ marginBottom: '5px' }}>{content.policeInspector}</p>
+                    <p style={{ marginBottom: '5px' }}>
+                        {content.policeStation}
                     </p>
-                    <p style={{marginBottom: '15px'}}>
-                        ता. <span className="data-placeholder">{data.policeStationTaluka}</span> जि. <span className="data-placeholder">{data.policeStationDistrict}</span> यांस
+                    <p style={{ marginBottom: '15px' }}>
+                        {content.talukaDistrict}
                     </p>
                 </div>
 
                 {/* Main Body of Warrant */}
                 <div style={{ marginTop: '20px', textAlign: 'justify' }}>
-                    
-                    <p className="warrant-paragraph" style={{ marginBottom: '15px' }}>
-                        ज्यापेक्षा <span className="data-placeholder bold-text">{data.accusedName}</span> राह. 
-                        <span className="data-placeholder bold-text">{data.accusedAddress}</span> यावर 
-                        <span className="data-placeholder bold-text">{data.offenseSection}</span> या अपराधाचा आरोप आलेला आहे, 
-                        त्यापेक्षा तुम्ही सदरहू <span className="data-placeholder bold-text">{data.accusedName}</span> यास धरून माझ्यापुढे आणावे असा तुम्हास या वॉरंटद्वारे हुकूम केला आहे. 
-                        यात लिहिल्याप्रमाणे तुम्ही चुकू नये.
-                    </p>
-                    
+                    {content.mainPara}
+
                     {/* Conditional Bail/Surety Clause (Only for Bailable Warrant) */}
-                    {data.warrantType === 'B.W.' && (
+                    {/* {data.warrantType === 'B.W.' && ( */}
                         <div className="bail-clause" style={{ marginBottom: '15px', border: '1px dashed #ccc', padding: '10px', background: '#f9f9f9', borderRadius: '4px' }}>
-                            <p style={{ fontWeight: 'bold', textDecoration: 'underline', margin: '0 0 5px 0'}}>जामीन सूचना (Bail Instruction):</p>
-                            <p className="warrant-paragraph" style={{ margin: '0' }}>
-                                सदरहू <span className="data-placeholder bold-text">{data.accusedName}</span> जर तारीख <span className="data-placeholder bold-text">{formatDateToIndian(data.appearanceDate)}</span> सन 
-                                <span className="data-placeholder bold-text">{appearanceYear}</span> रोजी माझ्यापुढे हजर होण्याविषयी व मी अन्य रितीने हुकूम येईपर्यंत हजर होत राहतील 
-                                याविषयी आपण स्वतः रु. <span className="data-placeholder bold-text">{data.personalBondAmount}</span> रकमेचे तारण लिहून देऊन 
-                                रु. <span className="data-placeholder bold-text">{data.suretyAmount1}</span> रकमेचा एक जामीन (अगर रु. <span className="data-placeholder bold-text">{data.suretyAmount2}</span> रकमेचा प्रत्येक असे दोन)
-                                द्याल, तर त्यास सोडून द्यावे.
-                            </p>
+                            <p style={{ fontWeight: 'bold', textDecoration: 'underline', margin: '0 0 5px 0' }}>{content.bailHeader}</p>
+                            {content.bailPara}
                         </div>
-                    )}
-                    
+                    {/* )} */}
+
                     {/* Issue Date */}
                     <p className="warrant-paragraph" style={{ marginTop: '20px', textAlign: 'left', fontWeight: 'bold' }}>
-                        आज तारीख <span className="data-placeholder bold-text">{issueDateParts.day}</span> माहे <span className="data-placeholder bold-text">{issueDateParts.month}</span> सन <span className="data-placeholder bold-text">{issueDateParts.year}</span>.
+                        {content.issueDate}
                     </p>
                 </div>
 
                 {/* Footer/Signature Block */}
-                <div className="footer-section" style={{marginTop: '30px', textAlign: 'right'}}>
+                <div className="footer-section" style={{ marginTop: '30px', textAlign: 'right' }}>
                     <div className="signature-block align-right" style={{
-                        width: 'auto', 
+                        width: 'auto',
                         display: 'inline-block',
                         paddingTop: '5px',
                         marginRight: '0px'
-                    }}> 
-                        <p style={{marginBottom: '0', marginTop: '10px', textAlign: 'center', fontWeight: 'bold', textDecoration: 'underline'}}>
-                            न्यायदंडाधिकारी प्रथम वर्ग,
+                    }}>
+                        <p style={{ marginBottom: '0', marginTop: '10px', textAlign: 'center', fontWeight: 'bold', }}>
+                            {content.magistrate}
                         </p>
-                        <p style={{marginBottom: '0', marginTop: '0', textAlign: 'center'}}>
-                            <span className="data-placeholder">{data.courtLocationFooter}</span> शहर.
+                        <p style={{ marginBottom: '0', marginTop: '0', textAlign: 'center' }}>
+                            <span className="data-placeholder">{courtLocationFooterText}</span>
+                        </p>
+                        <p style={{ marginBottom: '0', marginTop: '0', textAlign: 'center' }}>
+                            <span className="data-placeholder">{talukaDistText}</span> 
                         </p>
                     </div>
                 </div>
+
+                {(data.warrantType === "R.W." || data.warrantType === "A.W.") &&
+                    <div className="warrant-document">{content.footerTip}</div>
+                }
+
             </div>
         </div>
     );
 };
 
 
-// The main application component
-const ArrestWarrantApp = () => {
-    const today = new Date().toISOString().substring(0, 10);
-    
-    // Initial Data - Now includes explicit warrantType and caseType
-    const initialData = {
-        courtName: 'न्यायदंडाधिकारी, प्रथम वर्ग, मनमाड शहर',
-        warrantType: '', // B.W. or N.B.W.
-        caseType: '',     // RCC or SCC
-        caseNo: '',
-        policeStationName: '',
-        policeStationTaluka: 'नांदगाव',
-        policeStationDistrict: 'नाशिक',
-        accusedName: '',
-        accusedAddress: '',
-        offenseSection: '',
-        appearanceDate: today,
-        personalBondAmount: '', // Taran Amount
-        suretyAmount1: '', // One Surety Amount
-        suretyAmount2: '', // Two Surety Amount
-        issueDate: today, // Date of Warrant Issuance
-        courtLocationFooter: '', // Location in the footer
-    };
+// ====================================================================================
+// --- MAIN APPLICATION COMPONENT (ArrestWarrantApp) ---
+// ====================================================================================
 
-    const [data, setData] = useState(initialData);
+const ArrestWarrantApp = () => {
+    
+    // Start with Marathi defaults and set state accordingly
+    const [data, setData] = useState(defaultDataMarathi); 
+    const [language, setLanguage] = useState('Marathi');
+
+    // 🌟 CORE LOGIC: Update default data when language changes
+    useEffect(() => {
+        if (language === 'English') {
+            // Merge current user data with English defaults
+            setData(prevData => ({
+                ...mergeData(prevData, defaultDataEnglish),
+                language: 'English' 
+            }));
+        } else {
+            // Merge current user data with Marathi defaults
+             setData(prevData => ({
+                ...mergeData(prevData, defaultDataMarathi),
+                language: 'Marathi'
+            }));
+        }
+    }, [language]); 
+    
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setData((prev) => ({ ...prev, [name]: value }));
     };
-    
+
+    const handleLanguageChange = (e) => {
+        setLanguage(e.target.value);
+    };
+
     const handlePrint = () => {
+        const currentText = text[language];
+        if (!data.warrantType || !data.caseType || !data.accusedName || !data.section) {
+            alert(currentText.mandatoryFields);
+            return;
+        }
         window.print();
     };
+
+    const currentText = text[language];
 
     return (
         <div className="summons-container">
@@ -245,7 +540,7 @@ const ArrestWarrantApp = () => {
               box-shadow: inset 0 0 0 4px #f9fafb;
           }
 
-          .input-form input:not([type="radio"]), .input-form select {
+          .input-form input:not([type="radio"]), .input-form select, .input-form datalist {
             width: 100%;
             padding: 0.75rem;
             border: 1px solid #d1d5db;
@@ -254,7 +549,7 @@ const ArrestWarrantApp = () => {
             box-sizing: border-box;
             transition: border-color 0.15s ease-in-out;
           }
-          .input-form input:focus {
+          .input-form input:focus, .input-form select:focus {
             border-color: #2563eb;
             outline: none;
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
@@ -287,10 +582,10 @@ const ArrestWarrantApp = () => {
             min-height: 297mm; /* A4 height */
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); 
             background-color: white;
-            padding: 12mm 12mm; 
+            padding: 30mm 25mm; 
             box-sizing: border-box;
             /* Use Devanagari friendly fonts */
-            font-family: 'Lohit Devanagari', 'Arial Unicode MS', 'Mangal', sans-serif; 
+            font-family: ${language === 'Marathi' ? "'Lohit Devanagari', 'Arial Unicode MS', 'Mangal', sans-serif" : "Arial, sans-serif"}; 
             font-size: 12pt;
             line-height: 1.5; 
           }
@@ -373,10 +668,10 @@ const ArrestWarrantApp = () => {
               border: none !important; 
               box-shadow: none !important; 
               /* IMPORTANT: Use a minimal internal padding */
-              padding: 5mm 8mm !important; 
+              padding: 20mm 15mm !important; 
               font-size: 11pt; 
               line-height: 1.7; 
-              font-family: 'Lohit Devanagari', 'Arial Unicode MS', 'Mangal', sans-serif;
+              font-family: ${language === 'Marathi' ? "'Lohit Devanagari', 'Arial Unicode MS', 'Mangal', sans-serif" : "Arial, sans-serif"} !important;
             }
 
             /* Apply tighter spacing specifically for printing */
@@ -407,11 +702,37 @@ const ArrestWarrantApp = () => {
             {/* --------------------- Input Form Section --------------------- */}
             <div className="input-form">
                 <h2 className="text-xl font-bold mb-6 text-center text-gray-800">
-                    पकडण्याचा वॉरंट माहिती भरा (Arrest Warrant Details - CrPC 75)
+                    {currentText.header}
                 </h2>
-                
+
+                {/* --- LANGUAGE SELECTION --- */}
+                <h3 className="text-lg font-semibold mb-3 text-gray-700">भाषा निवडा (Select Language)</h3>
+                <div className="radio-group mb-6">
+                    <label>
+                        <input
+                            type="radio"
+                            name="language"
+                            value="Marathi"
+                            checked={language === 'Marathi'}
+                            onChange={handleLanguageChange}
+                        />
+                        **मराठी (Marathi)**
+                    </label>
+                    <label>
+                        <input
+                            type="radio"
+                            name="language"
+                            value="English"
+                            checked={language === 'English'}
+                            onChange={handleLanguageChange}
+                        />
+                        **English (इंग्रजी)**
+                    </label>
+                </div>
+                {/* ---------------------------------- */}
+
                 {/* 1. Warrant Type Selection */}
-                <h3 className="text-lg font-semibold mb-3 text-gray-700">१. वॉरंटचा प्रकार (Warrant Type)</h3>
+                <h3 className="text-lg font-semibold mb-3 text-gray-700 border-t pt-4">{currentText.warrantType}</h3>
                 <div className="radio-group">
                     <label>
                         <input
@@ -421,7 +742,7 @@ const ArrestWarrantApp = () => {
                             checked={data.warrantType === 'N.B.W.'}
                             onChange={handleChange}
                         />
-                        **N.B.W.** (Non Bailable Warrant - अजामीनपात्र)
+                        {currentText.typeNBW}
                     </label>
                     <label>
                         <input
@@ -431,12 +752,23 @@ const ArrestWarrantApp = () => {
                             checked={data.warrantType === 'B.W.'}
                             onChange={handleChange}
                         />
-                        **B.W.** (Bailable Warrant - जामीनपात्र)
+                        {currentText.typeBW}
                     </label>
+                    <label>
+                        <input
+                            type="radio"
+                            name="warrantType"
+                            value="A.W."
+                            checked={data.warrantType === 'A.W.'}
+                            onChange={handleChange}
+                        />
+                        {currentText.typeAW}
+                    </label>
+
                 </div>
 
                 {/* 2. Case Type Selection */}
-                <h3 className="text-lg font-semibold mb-3 text-gray-700 mt-6 border-t pt-4">२. खटल्याचा प्रकार (Case Type)</h3>
+                <h3 className="text-lg font-semibold mb-3 text-gray-700 mt-6 border-t pt-4">{currentText.caseType}</h3>
                 <div className="radio-group">
                     <label>
                         <input
@@ -458,21 +790,32 @@ const ArrestWarrantApp = () => {
                         />
                         **SCC** (Summary Criminal Case)
                     </label>
+                    <label>
+                        <input
+                            type="radio"
+                            name="caseType"
+                            value="MA"
+                            checked={data.caseType === 'MA'}
+                            onChange={handleChange}
+                        />
+                        M.A. (Miscellaneous Appllication)
+                    </label>
                 </div>
 
-                <h3 className="text-lg font-semibold mb-3 text-gray-700 mt-6 border-t pt-4">३. न्यायालयीन तपशील</h3>
+                <h3 className="text-lg font-semibold mb-3 text-gray-700 mt-6 border-t pt-4">{currentText.judicialDetails}</h3>
                 <div className="form-grid">
-                    <label style={{gridColumn: 'span 2'}}>
-                        न्यायालय/वॉरंट जारी करणारे (Court/Issuing Authority):
+                    <label style={{ gridColumn: 'span 2' }}>
+                        {currentText.courtName}
+                        {/* data.courtName is automatically updated by useEffect/mergeData */}
                         <input
                             type="text"
                             name="courtName"
-                            value={data.courtName}
+                            value={data.courtName} 
                             onChange={handleChange}
                         />
                     </label>
                     <label>
-                        खटला क्रमांक (Case No.):
+                        {currentText.caseNo}
                         <input
                             type="text"
                             name="caseNo"
@@ -481,7 +824,7 @@ const ArrestWarrantApp = () => {
                         />
                     </label>
                     <label>
-                       कोर्टाचे ठिकाण (Court Location):
+                        {currentText.courtLocation}
                         <input
                             type="text"
                             name="courtLocationFooter"
@@ -491,10 +834,10 @@ const ArrestWarrantApp = () => {
                     </label>
                 </div>
 
-                 <h3 className="text-lg font-semibold mb-3 text-gray-700 mt-6 border-t pt-4">४. आरोपी आणि गुन्हा तपशील</h3>
+                <h3 className="text-lg font-semibold mb-3 text-gray-700 mt-6 border-t pt-4">{currentText.accusedOffenseDetails}</h3>
                 <div className="form-grid">
                     <label>
-                        आरोपीचे नांव (Accused Name):
+                        {currentText.accusedName}
                         <input
                             type="text"
                             name="accusedName"
@@ -502,8 +845,8 @@ const ArrestWarrantApp = () => {
                             onChange={handleChange}
                         />
                     </label>
-                    <label style={{gridColumn: 'span 2'}}>
-                        आरोपीचा पत्ता (Accused Address):
+                    <label style={{ gridColumn: 'span 2' }}>
+                        {currentText.accusedAddress}
                         <input
                             type="text"
                             name="accusedAddress"
@@ -511,17 +854,41 @@ const ArrestWarrantApp = () => {
                             onChange={handleChange}
                         />
                     </label>
-                    <label style={{gridColumn: 'span 1'}}>
-                        गुन्हा/कलम (Offense/Section):
+
+                    <label>
+                        {currentText.act}
                         <input
                             type="text"
-                            name="offenseSection"
-                            value={data.offenseSection}
-                            onChange={handleChange}
+                            name="act"
+                            list="act-suggestions" // Link the input to the datalist
+                            placeholder={currentText.selectOrAddAct}
+                            value={data.act}
+                            onChange={handleChange} // This will handle both selection and manual entry
+                            className="form-control" // Add your styling class here
                         />
+
+                        {/* The <datalist> provides suggestions but allows other input */}
+                        <datalist id="act-suggestions">
+                            {actOptions.map((option) => (
+                                <option key={option.value} value={language === 'Marathi' ? option.value : option.label}>
+                                    {language === 'Marathi' ? option.label : option.value}
+                                </option>
+                            ))}
+                        </datalist>
                     </label>
                     <label>
-                        पोलीस स्टेशनचे नांव (Police Station):
+                        {currentText.section}
+                        <input
+                            type="text"
+                            name="section"
+                            value={data.section}
+                            onChange={handleChange}
+                            placeholder={currentText.placeholderSection}
+                        />
+                    </label>
+
+                    <label>
+                        {currentText.policeStationName}
                         <input
                             type="text"
                             name="policeStationName"
@@ -530,7 +897,7 @@ const ArrestWarrantApp = () => {
                         />
                     </label>
                     <label>
-                        पोलीस स्टेशन तालुका (Taluka):
+                        {currentText.policeStationTaluka}
                         <input
                             type="text"
                             name="policeStationTaluka"
@@ -539,7 +906,7 @@ const ArrestWarrantApp = () => {
                         />
                     </label>
                     <label>
-                        पोलीस स्टेशन जिल्हा (District):
+                        {currentText.policeStationDistrict}
                         <input
                             type="text"
                             name="policeStationDistrict"
@@ -548,59 +915,57 @@ const ArrestWarrantApp = () => {
                         />
                     </label>
                 </div>
-                
-                {/* 5. Bail/Surety Details (Only shown if B.W. is selected) */}
-                {data.warrantType === 'B.W.' && (
-                    <>
-                        <h3 className="text-lg font-semibold mb-3 text-gray-700 mt-6 border-t pt-4">५. तारण/जामीन तपशील (Bail/Surety Details)</h3>
-                        <div className="form-grid">
-                            <label>
-                                न्यायालयात हजर होण्याची तारीख (Appearance Date):
-                                <input
-                                    type="date"
-                                    name="appearanceDate"
-                                    value={data.appearanceDate}
-                                    onChange={handleChange}
-                                />
-                            </label>
-                            <label>
-                                स्वतःचे तारण रक्कम (Personal Bond Amount - रु.):
-                                <input
-                                    type="text"
-                                    name="personalBondAmount"
-                                    value={data.personalBondAmount}
-                                    onChange={handleChange}
-                                    placeholder="उदा. 20,000/-"
-                                />
-                            </label>
-                            <label>
-                                जामीनदार रक्कम (Surety Amount - १ जामीन):
-                                <input
-                                    type="text"
-                                    name="suretyAmount1"
-                                    value={data.suretyAmount1}
-                                    onChange={handleChange}
-                                    placeholder="उदा. 10,000/-"
-                                />
-                            </label>
-                            <label>
-                                प्रत्येक जामीनदार रक्कम (Surety Amount - २ जामीन):
-                                <input
-                                    type="text"
-                                    name="suretyAmount2"
-                                    value={data.suretyAmount2}
-                                    onChange={handleChange}
-                                    placeholder="उदा. 10,000/-"
-                                />
-                            </label>
-                        </div>
-                    </>
-                )}
-                
-                <h3 className="text-lg font-semibold mb-3 text-gray-700 mt-6 border-t pt-4">वॉरंट जारी करण्याची तारीख</h3>
+
+                {/* 5. Bail/Surety Details (Always shown for input, conditional display in document) */}
+                <>
+                    <h3 className="text-lg font-semibold mb-3 text-gray-700 mt-6 border-t pt-4">{currentText.bailSuretyDetails}</h3>
+                    <div className="form-grid">
+                        <label>
+                            {currentText.appearanceDate}
+                            <input
+                                type="date"
+                                name="appearanceDate"
+                                value={data.appearanceDate}
+                                onChange={handleChange}
+                            />
+                        </label>
+                        <label>
+                            {currentText.personalBondAmount}
+                            <input
+                                type="text"
+                                name="personalBondAmount"
+                                value={data.personalBondAmount}
+                                onChange={handleChange}
+                                placeholder="उदा. 20,000/-"
+                            />
+                        </label>
+                        <label>
+                            {currentText.suretyAmount1}
+                            <input
+                                type="text"
+                                name="suretyAmount1"
+                                value={data.suretyAmount1}
+                                onChange={handleChange}
+                                placeholder="उदा. 10,000/-"
+                            />
+                        </label>
+                        <label>
+                            {currentText.suretyAmount2}
+                            <input
+                                type="text"
+                                name="suretyAmount2"
+                                value={data.suretyAmount2}
+                                onChange={handleChange}
+                                placeholder="उदा. 10,000/-"
+                            />
+                        </label>
+                    </div>
+                </>
+
+                <h3 className="text-lg font-semibold mb-3 text-gray-700 mt-6 border-t pt-4">{currentText.issueDateSection}</h3>
                 <div className="form-grid">
                     <label>
-                        वॉरंट जारी करण्याची तारीख (Issue Date):
+                        {language === 'Marathi' ? 'वॉरंट जारी करण्याची तारीख:' : 'Warrant Issue Date:'}
                         <input
                             type="date"
                             name="issueDate"
@@ -608,17 +973,18 @@ const ArrestWarrantApp = () => {
                             onChange={handleChange}
                         />
                     </label>
+                    <div style={{ gridColumn: 'span 3' }}></div>
                 </div>
 
-                <button onClick={handlePrint} className="print-button mt-6">
-                    वॉरंट प्रिंट करा (Print Warrant) 🖨️
+
+                <button className="print-button mt-8" onClick={handlePrint}>
+                    {currentText.printButton}
                 </button>
             </div>
 
-            <hr className="w-full max-w-4xl border-gray-300 my-4" />
+            {/* --------------------- Printable Document Preview --------------------- */}
+            <ArrestWarrantDocument data={data} language={language} />
 
-            {/* --------------------- Print View Section (A4 Layout) --------------------- */}
-            <ArrestWarrantDocument data={data} />
         </div>
     );
 };
