@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { Gavel, MapPin, RotateCcw } from 'lucide-react';
 
 const DashboardOverview = ({ courtConfig = {}, setCourtConfig }) => {
-    // Destructure with safe defaults
     const { 
         language = 'marathi', 
         courtLevel = '', 
@@ -31,19 +30,14 @@ const DashboardOverview = ({ courtConfig = {}, setCourtConfig }) => {
         english: "Police Inspector, Police Station "
     };
 
-    // 1. Logic to handle language switching and prefix translation
     const handleLanguageChange = (newLang) => {
         const oldPrefix = prefixes[language];
         const newPrefix = prefixes[newLang];
-
         let updatedPs = policeStation;
 
-        // If current PS is just the old prefix or empty, replace with new prefix
         if (!policeStation || policeStation === oldPrefix) {
             updatedPs = newPrefix;
-        } 
-        // If it starts with the old prefix, swap the prefix part but keep user's typed text
-        else if (policeStation.startsWith(oldPrefix)) {
+        } else if (policeStation.startsWith(oldPrefix)) {
             updatedPs = policeStation.replace(oldPrefix, newPrefix);
         }
 
@@ -54,8 +48,9 @@ const DashboardOverview = ({ courtConfig = {}, setCourtConfig }) => {
         });
     };
 
-    // 2. Logic to generate the combined office heading
     useEffect(() => {
+        // Logic: Find if the entered text matches a known court level to translate it,
+        // otherwise use the user's manual input exactly as is.
         const match = courtLevels.find(l => l.mr === courtLevel || l.en === courtLevel);
         const displayLevel = match ? (language === 'marathi' ? match.mr : match.en) : courtLevel;
 
@@ -78,23 +73,18 @@ const DashboardOverview = ({ courtConfig = {}, setCourtConfig }) => {
         }
     }, [courtLevel, courtVillage, taluka, district, language, fullOfficeName, setCourtConfig]);
 
-    // 3. Reset Function
     const handleReset = () => {
-        // const confirmMsg = language === 'marathi' ? "सर्व माहिती रिसेट करायची?" : "Are you sure you want to reset?";
-        // if (window.confirm(confirmMsg)) {
-            setCourtConfig({
-                language: language, // Keep selected language
-                courtLevel: '',
-                courtVillage: '',
-                taluka: '',
-                district: '',
-                policeStation: prefixes[language],
-                fullOfficeName: ''
-            });
-        // }
+        setCourtConfig({
+            language: language,
+            courtLevel: '',
+            courtVillage: '',
+            taluka: '',
+            district: '',
+            policeStation: prefixes[language],
+            fullOfficeName: ''
+        });
     };
 
-    // 4. Handle PS text changes manually to preserve prefix
     const handlePsChange = (e) => {
         const val = e.target.value;
         const currentPrefix = prefixes[language];
@@ -115,82 +105,55 @@ const DashboardOverview = ({ courtConfig = {}, setCourtConfig }) => {
                     </h2>
                     
                     <div className="flex items-center gap-3">
-                        <button 
-                            onClick={handleReset}
-                            className="flex items-center gap-1 px-3 py-1 text-sm font-semibold text-red-500 hover:bg-red-50 rounded-lg transition border border-transparent hover:border-red-100"
-                        >
+                        <button onClick={handleReset} className="flex items-center gap-1 px-3 py-1 text-sm font-semibold text-red-500 hover:bg-red-50 rounded-lg transition border border-transparent hover:border-red-100">
                             <RotateCcw size={14} />
                             {language === 'marathi' ? 'रिसेट' : 'Reset'}
                         </button>
-
                         <div className="flex bg-gray-100 p-1 rounded-lg">
-                            <button 
-                                onClick={() => handleLanguageChange('marathi')} 
-                                className={`px-4 py-1 rounded-md transition text-sm font-bold ${language === 'marathi' ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`}
-                            > मराठी </button>
-                            <button 
-                                onClick={() => handleLanguageChange('english')} 
-                                className={`px-4 py-1 rounded-md transition text-sm font-bold ${language === 'english' ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`}
-                            > English </button>
+                            <button onClick={() => handleLanguageChange('marathi')} className={`px-4 py-1 rounded-md transition text-sm font-bold ${language === 'marathi' ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`}> मराठी </button>
+                            <button onClick={() => handleLanguageChange('english')} className={`px-4 py-1 rounded-md transition text-sm font-bold ${language === 'english' ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`}> English </button>
                         </div>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* UPDATED: Manual Input + Datalist Suggestions */}
                     <div className="flex flex-col gap-1">
-                        <label className="text-sm font-semibold text-gray-600">{language === 'marathi' ? 'न्यायालयाचा स्तर' : 'Court Level'}</label>
-                        <select 
+                        <label className="text-sm font-semibold text-gray-600">
+                            {language === 'marathi' ? 'न्यायालयाचा स्तर (निवडा किंवा टाइप करा)' : 'Court Level (Select or Type)'}
+                        </label>
+                        <input 
+                            list="court-level-options"
                             className="border p-2 rounded-lg bg-gray-50 focus:bg-white outline-none ring-indigo-200 focus:ring-2"
                             value={courtLevel} 
+                            placeholder={language === 'marathi' ? "निवडा किंवा टाइप करा..." : "Select or type..."}
                             onChange={(e) => setCourtConfig({ ...courtConfig, courtLevel: e.target.value })}
-                        >
-                            <option value="">-- {language === 'marathi' ? 'निवडा' : 'Select'} --</option>
+                        />
+                        <datalist id="court-level-options">
                             {courtLevels.map((lvl, i) => (
-                                <option key={i} value={language === 'marathi' ? lvl.mr : lvl.en}>
-                                    {language === 'marathi' ? lvl.mr : lvl.en}
-                                </option>
+                                <option key={i} value={language === 'marathi' ? lvl.mr : lvl.en} />
                             ))}
-                        </select>
+                        </datalist>
                     </div>
 
                     <div className="flex flex-col gap-1">
                         <label className="text-sm font-semibold text-gray-600">{language === 'marathi' ? 'न्यायालय गाव' : 'Court Village'}</label>
-                        <input 
-                            type="text" 
-                            className="border p-2 rounded-lg outline-none ring-indigo-200 focus:ring-2" 
-                            value={courtVillage} 
-                            onChange={(e) => setCourtConfig({ ...courtConfig, courtVillage: e.target.value })} 
-                        />
+                        <input type="text" className="border p-2 rounded-lg outline-none ring-indigo-200 focus:ring-2" value={courtVillage} onChange={(e) => setCourtConfig({ ...courtConfig, courtVillage: e.target.value })} />
                     </div>
 
                     <div className="flex flex-col gap-1">
                         <label className="text-sm font-semibold text-gray-600">{language === 'marathi' ? 'तालुका' : 'Taluka'}</label>
-                        <input 
-                            type="text" 
-                            className="border p-2 rounded-lg outline-none ring-indigo-200 focus:ring-2" 
-                            value={taluka} 
-                            onChange={(e) => setCourtConfig({ ...courtConfig, taluka: e.target.value })} 
-                        />
+                        <input type="text" className="border p-2 rounded-lg outline-none ring-indigo-200 focus:ring-2" value={taluka} onChange={(e) => setCourtConfig({ ...courtConfig, taluka: e.target.value })} />
                     </div>
 
                     <div className="flex flex-col gap-1">
                         <label className="text-sm font-semibold text-gray-600">{language === 'marathi' ? 'जिल्हा' : 'District'}</label>
-                        <input 
-                            type="text" 
-                            className="border p-2 rounded-lg outline-none ring-indigo-200 focus:ring-2" 
-                            value={district} 
-                            onChange={(e) => setCourtConfig({ ...courtConfig, district: e.target.value })} 
-                        />
+                        <input type="text" className="border p-2 rounded-lg outline-none ring-indigo-200 focus:ring-2" value={district} onChange={(e) => setCourtConfig({ ...courtConfig, district: e.target.value })} />
                     </div>
 
                     <div className="flex flex-col gap-1 md:col-span-2 lg:col-span-1">
                         <label className="text-sm font-semibold text-gray-600">{language === 'marathi' ? 'पोलीस स्टेशन' : 'Police Station'}</label>
-                        <input 
-                            type="text" 
-                            className="border p-2 rounded-lg outline-none ring-indigo-200 focus:ring-2" 
-                            value={policeStation || prefixes[language]} 
-                            onChange={handlePsChange} 
-                        />
+                        <input type="text" className="border p-2 rounded-lg outline-none ring-indigo-200 focus:ring-2" value={policeStation || prefixes[language]} onChange={handlePsChange} />
                     </div>
                 </div>
 
