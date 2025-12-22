@@ -389,7 +389,7 @@ const ArrestWarrantDocument = ({ data, language }) => {
                 </div>
 
                 {/* Footer/Signature Block */}
-                <div className="footer-section" style={{ marginTop: '30px', textAlign: 'right' }}>
+                {/* <div className="footer-section" style={{ marginTop: '30px', textAlign: 'right' }}>
                     <div className="signature-block" style={{
                         width: 'auto',
                         display: 'inline-block',
@@ -433,6 +433,47 @@ const ArrestWarrantDocument = ({ data, language }) => {
                             }
                         })()}
                     </div>
+                </div> */}
+
+                {/* <div style={{ marginTop: '10px', marginBottom: '10px', padding: '0 0mm', textAlign: 'right' }}>
+                    <div style={{
+                        display: 'inline-block',
+                        textAlign: 'center',
+                        minWidth: '200px' // Adjust width as needed for better centering look
+                    }}>
+                        {(() => {
+                            const psText = data.courtName || "";
+                            // Split by comma and map each part
+                            return psText.split(',').map((part, index) => (
+                                <p key={index} style={{ margin: 0, padding: 0, fontWeight: index === 0 ? 'bold' : 'normal', textAlign: "center" }}>
+                                    {part.trim()}
+                                </p>
+                            ));
+                        })()}
+                    </div>
+                </div> */}
+
+                <div style={{ marginTop: '10px', marginBottom: '10px', padding: '0 0mm', textAlign: 'right' }}>
+                    <div style={{
+                        display: 'inline-block',
+                        textAlign: 'center',
+                        minWidth: '200px' // Adjust width as needed for better centering look
+                    }}>
+                        {/* <p style={{ marginBottom: '0', marginTop: '0' }}>{t('footer_designation_1')}</p> */}
+
+                        {(() => {
+                            const psText = data.courtLevel || "";
+                            // Split by comma and map each part
+                            return psText.split(',').map((part, index) => (
+                                <div>
+                                    <p key={index} style={{ margin: 0, padding: 0, fontWeight: index === 0 ? 'bold' : 'normal', textAlign: "center" }}>
+                                        {part.trim()}
+                                    </p>
+                                </div>
+                            ));
+                        })()}
+                        <p style={{ margin: 0, padding: 0, textAlign: "center" }}>{data.courtVillage}</p>
+                    </div>
                 </div>
                 {(data.warrantType === "R.W." || data.warrantType === "A.W.") &&
                     <div className="warrant-document">{content.footerTip}</div>
@@ -468,7 +509,9 @@ const ArrestWarrantApp = ({ courtConfig }) => {
         policeStationName: '',
         courtLocationFooter: '',
         outWordNo: '',
-        dateLabel: ''
+        dateLabel: '',
+        courtLevel: '',
+        courtVillage: '',
     });
 
     // 2. Local language state (Derived or synced from courtConfig)
@@ -485,6 +528,8 @@ const ArrestWarrantApp = ({ courtConfig }) => {
             courtName: courtConfig.fullOfficeName || '',
             policeStationName: courtConfig.policeStation || '',
             courtLocationFooter: courtConfig.courtVillage || '',
+            courtLevel: courtConfig.courtLevel,
+            courtVillage: courtConfig.courtVillage,
 
             // Language specific labels
             dateLabel: isMar ? "दिनांक : " : "Date: ",
@@ -823,58 +868,58 @@ const ArrestWarrantApp = ({ courtConfig }) => {
 
                 {/* 2. Case Type Selection */}
                 <h3 className="text-lg font-semibold mb-3 text-gray-700 mt-6 border-t pt-4">{currentText.caseType}</h3>
-             <div className="flex flex-row items-end gap-4 w-full border-b pb-4 mb-4">
-    
-    {/* 1. Case Type Radios */}
-<div className="flex flex-col gap-1 flex-1">
-    <label className="text-sm font-semibold text-gray-600 ml-1">
-        {language === 'Marathi' ? 'प्रकार:' : 'Type:'}
-    </label>
-    {/* Increased gap-10 and added px-4 for internal breathing room */}
-    <div className="flex items-center gap-10 px-4 border rounded-lg bg-gray-50 h-[42px]">
-        <label className="flex items-center gap-2 cursor-pointer whitespace-nowrap hover:text-indigo-600 transition-colors">
-            <input type="radio" name="caseType" value="RCC" checked={data.caseType === 'RCC'} onChange={handleChange} className="w-4 h-4" />
-            <span className="text-sm font-medium" style={{marginLeft:"10px"}}>RCC (Regular)</span>
-        </label>
-        <label className="flex items-center gap-2 cursor-pointer whitespace-nowrap hover:text-indigo-600 transition-colors">
-            <input type="radio" name="caseType" value="SCC" checked={data.caseType === 'SCC'} onChange={handleChange} className="w-4 h-4" />
-            <span className="text-sm font-medium" style={{marginLeft:"10px"}}>SCC (Summary)</span>
-        </label>
-        <label className="flex items-center gap-2 cursor-pointer whitespace-nowrap hover:text-indigo-600 transition-colors">
-            <input type="radio" name="caseType" value="MA" checked={data.caseType === 'MA'} onChange={handleChange} className="w-4 h-4" />
-            <span className="text-sm font-medium" style={{marginLeft:"10px"}}>M.A.(Miscellaneous Appllication)</span>
-        </label>
-    </div>
-</div>
-    {/* 2. Case Number Input */}
-    <div className="flex flex-col gap-1 ">
-        <label className="text-sm font-semibold text-gray-600 whitespace-nowrap">
-            {currentText.caseNo}
-        </label>
-        <input
-            type="text"
-            name="caseNo"
-            className="border p-2 rounded-lg outline-none focus:ring-2 ring-indigo-200 h-[42px]"
-            value={data.caseNo}
-            onChange={handleChange}
-            placeholder="No/Year"
-        />
-    </div>
+                <div className="flex flex-row items-end gap-4 w-full border-b pb-4 mb-4">
 
-    {/* 3. Issue Date Input */}
-    <div className="flex flex-col gap-1 ">
-        <label className="text-sm font-semibold text-gray-600 whitespace-nowrap">
-            {language === 'Marathi' ? 'वॉरंट जारी तारीख:' : 'Warrant Issue Date:'}
-        </label>
-        <input
-            type="date"
-            name="issueDate"
-            className="border p-2 rounded-lg outline-none focus:ring-2 ring-indigo-200 h-[42px]"
-            value={data.issueDate}
-            onChange={handleChange}
-        />
-    </div>
-</div>
+                    {/* 1. Case Type Radios */}
+                    <div className="flex flex-col gap-1 flex-1">
+                        <label className="text-sm font-semibold text-gray-600 ml-1">
+                            {language === 'Marathi' ? 'प्रकार:' : 'Type:'}
+                        </label>
+                        {/* Increased gap-10 and added px-4 for internal breathing room */}
+                        <div className="flex items-center gap-10 px-4 border rounded-lg bg-gray-50 h-[42px]">
+                            <label className="flex items-center gap-2 cursor-pointer whitespace-nowrap hover:text-indigo-600 transition-colors">
+                                <input type="radio" name="caseType" value="RCC" checked={data.caseType === 'RCC'} onChange={handleChange} className="w-4 h-4" />
+                                <span className="text-sm font-medium" style={{ marginLeft: "10px" }}>RCC (Regular)</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer whitespace-nowrap hover:text-indigo-600 transition-colors">
+                                <input type="radio" name="caseType" value="SCC" checked={data.caseType === 'SCC'} onChange={handleChange} className="w-4 h-4" />
+                                <span className="text-sm font-medium" style={{ marginLeft: "10px" }}>SCC (Summary)</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer whitespace-nowrap hover:text-indigo-600 transition-colors">
+                                <input type="radio" name="caseType" value="MA" checked={data.caseType === 'MA'} onChange={handleChange} className="w-4 h-4" />
+                                <span className="text-sm font-medium" style={{ marginLeft: "10px" }}>M.A.(Miscellaneous Appllication)</span>
+                            </label>
+                        </div>
+                    </div>
+                    {/* 2. Case Number Input */}
+                    <div className="flex flex-col gap-1 ">
+                        <label className="text-sm font-semibold text-gray-600 whitespace-nowrap">
+                            {currentText.caseNo}
+                        </label>
+                        <input
+                            type="text"
+                            name="caseNo"
+                            className="border p-2 rounded-lg outline-none focus:ring-2 ring-indigo-200 h-[42px]"
+                            value={data.caseNo}
+                            onChange={handleChange}
+                            placeholder="No/Year"
+                        />
+                    </div>
+
+                    {/* 3. Issue Date Input */}
+                    <div className="flex flex-col gap-1 ">
+                        <label className="text-sm font-semibold text-gray-600 whitespace-nowrap">
+                            {language === 'Marathi' ? 'वॉरंट जारी तारीख:' : 'Warrant Issue Date:'}
+                        </label>
+                        <input
+                            type="date"
+                            name="issueDate"
+                            className="border p-2 rounded-lg outline-none focus:ring-2 ring-indigo-200 h-[42px]"
+                            value={data.issueDate}
+                            onChange={handleChange}
+                        />
+                    </div>
+                </div>
 
                 {/* <h3 className="text-lg font-semibold mb-3 text-gray-700 mt-6 border-t pt-4">{currentText.judicialDetails}</h3> */}
                 {/* <div className="form-grid"> */}
