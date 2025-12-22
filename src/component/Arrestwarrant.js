@@ -35,10 +35,10 @@ const courtInfo = {
 // Assuming 'today' is a defined variable (e.g., const today = new Date().toLocaleDateString('en-GB');)
 
 const defaultDataMarathi = {
-    courtName: courtInfo.courtName.mar,
+    courtName: "",
     talukaDist: courtInfo.talukaDist.mar,
-    warrantType: '', 
-    caseType: '',     
+    warrantType: '',
+    caseType: '',
     caseNo: '',
     policeStationName: courtInfo.policeStation.mar,
     policeStationTaluka: courtInfo.policeStationTaluka.mar,
@@ -48,9 +48,9 @@ const defaultDataMarathi = {
     act: '',
     section: '',
     appearanceDate: today, // Placeholder for the 'today' variable
-    personalBondAmount: '', 
-    suretyAmount1: '', 
-    suretyAmount2: '', 
+    personalBondAmount: '',
+    suretyAmount1: '',
+    suretyAmount2: '',
     issueDate: today, // Placeholder for the 'today' variable
     courtLocationFooter: courtInfo.policeStation.mar, // Using police station name for footer location
     date: "दिनांक : ",
@@ -59,10 +59,10 @@ const defaultDataMarathi = {
 
 // Translated default data for English
 const defaultDataEnglish = {
-    courtName: courtInfo.courtName.eng,
+    courtName: "",
     talukaDist: courtInfo.talukaDist.eng,
-    warrantType: '', 
-    caseType: '',     
+    warrantType: '',
+    caseType: '',
     caseNo: '',
     policeStationName: courtInfo.policeStation.eng,
     policeStationTaluka: courtInfo.policeStationTaluka.eng,
@@ -72,9 +72,9 @@ const defaultDataEnglish = {
     act: '',
     section: '',
     appearanceDate: today, // Placeholder for the 'today' variable
-    personalBondAmount: '', 
-    suretyAmount1: '', 
-    suretyAmount2: '', 
+    personalBondAmount: '',
+    suretyAmount1: '',
+    suretyAmount2: '',
     issueDate: today, // Placeholder for the 'today' variable
     courtLocationFooter: courtInfo.policeStation.eng, // Using police station name for footer location
     date: "Date :",
@@ -91,7 +91,7 @@ const text = {
         typeNBW: 'N.B.W. (Non Bailable Warrant - अजामीनपात्र)',
         typeBW: 'B.W. (Bailable Warrant - जामीनपात्र)',
         typeAW: 'A.W. (Arrest Warrant - अटक)',
-        caseType: '२. खटल्याचा प्रकार (Case Type)',
+        caseType: '२. खटल्याचा प्रकार (Case Type)व वॉरंट जारी करण्याची तारीख',
         judicialDetails: '३. न्यायालयीन तपशील',
         courtName: 'न्यायालय/वॉरंट जारी करणारे (Court/Issuing Authority):',
         caseNo: 'खटला क्रमांक (Case No.):',
@@ -121,7 +121,7 @@ const text = {
         typeNBW: 'N.B.W. (Non Bailable Warrant)',
         typeBW: 'B.W. (Bailable Warrant)',
         typeAW: 'A.W. (Arrest Warrant)',
-        caseType: '2. Case Type',
+        caseType: '2. Case Type & Warrant Issue Date',
         judicialDetails: '3. Judicial Details',
         courtName: 'Court/Issuing Authority:',
         caseNo: 'Case Number:',
@@ -156,14 +156,14 @@ const actOptions = [
     { value: "Gambling Act", label: "Gambling Act" },
     // { value: "Bombay Prohibition", label: "Bombay Prohibition" },
     { value: "महाराष्ट्र दारूबंदी अधिनियम", label: "Maharashtra Prohibition Act" },
-     { value: "शस्त्रास्त्र कायदा", label: "Arms Act" },
-{ value: "महाराष्ट जुगार प्रतिबंध अधिनियम", label: "Bombay Prevention of Gambling Act" },
-      
-      
+    { value: "शस्त्रास्त्र कायदा", label: "Arms Act" },
+    { value: "महाराष्ट जुगार प्रतिबंध अधिनियम", label: "Bombay Prevention of Gambling Act" },
 
-    
 
-    
+
+
+
+
 ];
 
 const formatDate = (isoDate) => {
@@ -180,13 +180,13 @@ const getTranslatedFixedData = (data, language) => {
     if (language === 'Marathi') {
         return {
             courtName: data.courtName,
-            talukaDist: data.talukaDist, 
+            talukaDist: data.talukaDist,
             courtLocationFooter: data.courtLocationFooter,
-            date:data.date,
-            outWordNo:data.outWordNo
+            date: data.date,
+            outWordNo: data.outWordNo
         };
     }
-    
+
     // Construct English structured names from the data inputs
     const courtLevel = 'Judicial Magistrate First Class,';
     const courtLocation = `${data.courtLocationFooter} City,`;
@@ -195,10 +195,10 @@ const getTranslatedFixedData = (data, language) => {
 
     return {
         courtName: `${courtLevel} ${courtLocation} ${taluka} ${district}`,
-        talukaDist: `${district}, ${taluka.replace(',', '')}`, 
+        talukaDist: `${district}, ${taluka.replace(',', '')}`,
         courtLocationFooter: data.courtLocationFooter,
-        date:data.date,
-        outWordNo:data.outWordNo
+        date: data.date,
+        outWordNo: data.outWordNo
     };
 };
 
@@ -206,16 +206,16 @@ const getTranslatedFixedData = (data, language) => {
 const mergeData = (currentData, newDefaults) => {
     // Determine the set of defaults the CURRENT data state is based on
     const originalDefaults = currentData.language === 'Marathi' ? defaultDataMarathi : defaultDataEnglish;
-    
+
     const merged = {};
     for (const key in newDefaults) {
         // Condition: If the current value is blank OR if it matches the ORIGINAL default value (meaning user didn't change it),
         // then we apply the new default data value for the new language.
         if (currentData[key] === '' || currentData[key] === originalDefaults[key]) {
-             merged[key] = newDefaults[key];
+            merged[key] = newDefaults[key];
         } else {
-             // Otherwise, we keep the user's input
-             merged[key] = currentData[key];
+            // Otherwise, we keep the user's input
+            merged[key] = currentData[key];
         }
     }
     return merged;
@@ -225,8 +225,8 @@ const mergeData = (currentData, newDefaults) => {
 const getWarrantContent = (data, language) => {
     const formattedIssueDate = formatDate(data.issueDate);
     const formattedAppearanceDate = formatDate(data.appearanceDate);
-    const warrantUserType = data.warrantType === "A.W." ? 
-        (language === 'Marathi' ? 'सामनेवाला' : 'the person concerned') : 
+    const warrantUserType = data.warrantType === "A.W." ?
+        (language === 'Marathi' ? 'सामनेवाला' : 'the person concerned') :
         (language === 'Marathi' ? 'आरोपी' : 'the accused');
 
     const descriptiveWarrant = (type) => {
@@ -318,7 +318,7 @@ const getWarrantContent = (data, language) => {
 const ArrestWarrantDocument = ({ data, language }) => {
 
     const content = getWarrantContent(data, language);
-    const translatedFixedData = getTranslatedFixedData(data, language); 
+    const translatedFixedData = getTranslatedFixedData(data, language);
 
     const courtLocationFooterText = translatedFixedData.courtLocationFooter;
     const talukaDistText = translatedFixedData.talukaDist;
@@ -326,15 +326,15 @@ const ArrestWarrantDocument = ({ data, language }) => {
     return (
         <div className="printable-area" id="print-warrant-content" style={{ fontFamily: language === 'Marathi' ? 'Lohit Devanagari, Arial Unicode MS, Mangal, sans-serif' : 'Arial, sans-serif' }}>
             <div className="warrant-document">
-              {(data.policeStationName !== courtInfo.policeStation.mar && data.policeStationName !== courtInfo.policeStation.eng) ? 
-  <div style={{ lineHeight: "1.7", textAlign: "right", marginBottom: "15px" }}>
-    <p style={{ textAlign: "right" }}> {translatedFixedData.outWordNo}  &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/202</p>
-    <p style={{ textAlign: "right" }}>{translatedFixedData.date} &nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;  &nbsp; /202</p>
-  </div>
-:""}
+                {(data.policeStationName !== courtInfo.policeStation.mar && data.policeStationName !== courtInfo.policeStation.eng) ?
+                    <div style={{ lineHeight: "1.7", textAlign: "right", marginBottom: "15px" }}>
+                        <p style={{ textAlign: "right" }}> {translatedFixedData.outWordNo}  &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/202</p>
+                        <p style={{ textAlign: "right" }}>{translatedFixedData.date} &nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;  &nbsp; /202</p>
+                    </div>
+                    : ""}
                 {/* Court and Heading (FIXED FOR TRANSLATION) */}
                 <p className="align-center court-title" style={{ fontSize: "20px", fontWeight: 'bold', textDecoration: "underline", marginBottom: '5px' }}>
-                    <span className="data-placeholder">{translatedFixedData.courtName}</span>
+                    <span className="data-placeholder">{data.courtName}</span>
                 </p>
 
                 {/* Warrant Type and Case Type Display */}
@@ -353,13 +353,21 @@ const ArrestWarrantDocument = ({ data, language }) => {
                 {/* To: Police Inspector */}
                 <div style={{ marginTop: '10px', marginBottom: '10px', padding: '0 0mm' }}>
                     <p style={{ marginBottom: '5px', fontWeight: 'bold' }}>{content.to}</p>
-                    <p style={{ marginBottom: '5px' }}>{content.policeInspector}</p>
-                    <p style={{ marginBottom: '5px' }}>
-                        {content.policeStation}
-                    </p>
-                    <p style={{ marginBottom: '15px' }}>
+                    {/* <p style={{ marginBottom: '5px' }}>{content.policeInspector}</p> */}
+                    <div style={{ marginBottom: '5px' }}>
+                        {(() => {
+                            const psText = data.policeStationName || "";
+                            // Split by comma and map each part
+                            return psText.split(',').map((part, index) => (
+                                <p key={index} style={{ margin: 0, padding: 0 }}>
+                                    {part.trim()}
+                                </p>
+                            ));
+                        })()}
+                    </div>
+                    {/* <p style={{ marginBottom: '15px' }}>
                         {content.talukaDistrict}
-                    </p>
+                    </p> */}
                 </div>
 
                 {/* Main Body of Warrant */}
@@ -368,10 +376,10 @@ const ArrestWarrantDocument = ({ data, language }) => {
 
                     {/* Conditional Bail/Surety Clause (Only for Bailable Warrant) */}
                     {/* {data.warrantType === 'B.W.' && ( */}
-                        <div className="bail-clause" style={{ marginBottom: '15px', border: '1px dashed #ccc', padding: '10px', background: '#f9f9f9', borderRadius: '4px' }}>
-                            <p style={{ fontWeight: 'bold', textDecoration: 'underline', margin: '0 0 5px 0' }}>{content.bailHeader}</p>
-                            {content.bailPara}
-                        </div>
+                    <div className="bail-clause" style={{ marginBottom: '15px', border: '1px dashed #ccc', padding: '10px', background: '#f9f9f9', borderRadius: '4px' }}>
+                        <p style={{ fontWeight: 'bold', textDecoration: 'underline', margin: '0 0 5px 0' }}>{content.bailHeader}</p>
+                        {content.bailPara}
+                    </div>
                     {/* )} */}
 
                     {/* Issue Date */}
@@ -382,24 +390,50 @@ const ArrestWarrantDocument = ({ data, language }) => {
 
                 {/* Footer/Signature Block */}
                 <div className="footer-section" style={{ marginTop: '30px', textAlign: 'right' }}>
-                    <div className="signature-block align-right" style={{
+                    <div className="signature-block" style={{
                         width: 'auto',
                         display: 'inline-block',
                         paddingTop: '5px',
-                        marginRight: '0px'
+                        marginRight: '0px',
+                        textAlign: 'center'
                     }}>
-                        <p style={{ marginBottom: '0', marginTop: '10px', textAlign: 'center', fontWeight: 'bold', }}>
-                            {content.magistrate}
-                        </p>
-                        <p style={{ marginBottom: '0', marginTop: '0', textAlign: 'center' }}>
-                            <span className="data-placeholder">{courtLocationFooterText}</span>
-                        </p>
-                        <p style={{ marginBottom: '0', marginTop: '0', textAlign: 'center' }}>
-                            <span className="data-placeholder">{talukaDistText}</span> 
-                        </p>
+                        {(() => {
+                            const originalName = data.courtName || "";
+
+                            // 1. Remove data after the last two commas
+                            const parts = originalName.split(',').map(p => p.trim());
+
+                            // Only remove if there are enough parts to remove, otherwise keep it as is
+                            const trimmedParts = parts.length > 2 ? parts.slice(0, -2) : parts;
+                            const cleanedName = trimmedParts.join(', ');
+
+                            // 2. Split by the first comma for the multi-line layout
+                            const firstCommaIndex = cleanedName.indexOf(',');
+
+                            if (firstCommaIndex !== -1) {
+                                const designation = cleanedName.substring(0, firstCommaIndex).trim();
+                                const remainingAddress = cleanedName.substring(firstCommaIndex + 1).trim();
+
+                                return (
+                                    <>
+                                        <p style={{ marginBottom: '0', marginTop: '10px', fontWeight: 'bold' }}>
+                                            {designation}
+                                        </p>
+                                        <p style={{ marginBottom: '0', marginTop: '0', textAlign: "center" }}>
+                                            {remainingAddress}
+                                        </p>
+                                    </>
+                                );
+                            } else {
+                                return (
+                                    <p style={{ marginBottom: '0', marginTop: '10px', fontWeight: 'bold' }}>
+                                        {cleanedName}
+                                    </p>
+                                );
+                            }
+                        })()}
                     </div>
                 </div>
-
                 {(data.warrantType === "R.W." || data.warrantType === "A.W.") &&
                     <div className="warrant-document">{content.footerTip}</div>
                 }
@@ -414,29 +448,49 @@ const ArrestWarrantDocument = ({ data, language }) => {
 // --- MAIN APPLICATION COMPONENT (ArrestWarrantApp) ---
 // ====================================================================================
 
-const ArrestWarrantApp = () => {
-    
-    // Start with Marathi defaults and set state accordingly
-    const [data, setData] = useState(defaultDataMarathi); 
-    const [language, setLanguage] = useState('Marathi');
+const ArrestWarrantApp = ({ courtConfig }) => {
 
-    // 🌟 CORE LOGIC: Update default data when language changes
+    const [data, setData] = useState({
+        warrantType: 'N.B.W.',
+        caseType: 'RCC',
+        caseNo: '',
+        accusedName: '',
+        accusedAddress: '',
+        act: '',
+        section: '',
+        appearanceDate: today,
+        personalBondAmount: '',
+        suretyAmount1: '',
+        suretyAmount2: '',
+        issueDate: today,
+        // Values to be synced from courtConfig
+        courtName: '',
+        policeStationName: '',
+        courtLocationFooter: '',
+        outWordNo: '',
+        dateLabel: ''
+    });
+
+    // 2. Local language state (Derived or synced from courtConfig)
+    const [language, setLanguage] = useState(courtConfig.language === 'marathi' ? 'Marathi' : 'English');
+
+    // 🌟 CORE LOGIC: Sync with Dashboard (courtConfig) and Handle Language Change
     useEffect(() => {
-        if (language === 'English') {
-            // Merge current user data with English defaults
-            setData(prevData => ({
-                ...mergeData(prevData, defaultDataEnglish),
-                language: 'English' 
-            }));
-        } else {
-            // Merge current user data with Marathi defaults
-             setData(prevData => ({
-                ...mergeData(prevData, defaultDataMarathi),
-                language: 'Marathi'
-            }));
-        }
-    }, [language]); 
-    
+        const isMar = courtConfig.language === 'marathi';
+        setLanguage(isMar ? 'Marathi' : 'English');
+
+        setData(prev => ({
+            ...prev,
+            // Mapping from your dashboard config
+            courtName: courtConfig.fullOfficeName || '',
+            policeStationName: courtConfig.policeStation || '',
+            courtLocationFooter: courtConfig.courtVillage || '',
+
+            // Language specific labels
+            dateLabel: isMar ? "दिनांक : " : "Date: ",
+            outWordNo: isMar ? "जा. क्र :" : "Outward No:"
+        }));
+    }, [courtConfig]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -701,13 +755,13 @@ const ArrestWarrantApp = () => {
 
             {/* --------------------- Input Form Section --------------------- */}
             <div className="input-form">
-                <h2 className="text-xl font-bold mb-6 text-center text-gray-800">
+                {/* <h2 className="text-xl font-bold mb-6 text-center text-gray-800">
                     {currentText.header}
-                </h2>
+                </h2> */}
 
                 {/* --- LANGUAGE SELECTION --- */}
-                <h3 className="text-lg font-semibold mb-3 text-gray-700">भाषा निवडा (Select Language)</h3>
-                <div className="radio-group mb-6">
+                {/* <h3 className="text-lg font-semibold mb-3 text-gray-700">भाषा निवडा (Select Language)</h3> */}
+                {/* <div className="radio-group mb-6">
                     <label>
                         <input
                             type="radio"
@@ -728,7 +782,7 @@ const ArrestWarrantApp = () => {
                         />
                         **English (इंग्रजी)**
                     </label>
-                </div>
+                </div> */}
                 {/* ---------------------------------- */}
 
                 {/* 1. Warrant Type Selection */}
@@ -769,52 +823,71 @@ const ArrestWarrantApp = () => {
 
                 {/* 2. Case Type Selection */}
                 <h3 className="text-lg font-semibold mb-3 text-gray-700 mt-6 border-t pt-4">{currentText.caseType}</h3>
-                <div className="radio-group">
-                    <label>
-                        <input
-                            type="radio"
-                            name="caseType"
-                            value="RCC"
-                            checked={data.caseType === 'RCC'}
-                            onChange={handleChange}
-                        />
-                        **RCC** (Regular Criminal Case)
-                    </label>
-                    <label>
-                        <input
-                            type="radio"
-                            name="caseType"
-                            value="SCC"
-                            checked={data.caseType === 'SCC'}
-                            onChange={handleChange}
-                        />
-                        **SCC** (Summary Criminal Case)
-                    </label>
-                    <label>
-                        <input
-                            type="radio"
-                            name="caseType"
-                            value="MA"
-                            checked={data.caseType === 'MA'}
-                            onChange={handleChange}
-                        />
-                        M.A. (Miscellaneous Appllication)
-                    </label>
-                </div>
+             <div className="flex flex-row items-end gap-4 w-full border-b pb-4 mb-4">
+    
+    {/* 1. Case Type Radios */}
+<div className="flex flex-col gap-1 flex-1">
+    <label className="text-sm font-semibold text-gray-600 ml-1">
+        {language === 'Marathi' ? 'प्रकार:' : 'Type:'}
+    </label>
+    {/* Increased gap-10 and added px-4 for internal breathing room */}
+    <div className="flex items-center gap-10 px-4 border rounded-lg bg-gray-50 h-[42px]">
+        <label className="flex items-center gap-2 cursor-pointer whitespace-nowrap hover:text-indigo-600 transition-colors">
+            <input type="radio" name="caseType" value="RCC" checked={data.caseType === 'RCC'} onChange={handleChange} className="w-4 h-4" />
+            <span className="text-sm font-medium" style={{marginLeft:"10px"}}>RCC (Regular)</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer whitespace-nowrap hover:text-indigo-600 transition-colors">
+            <input type="radio" name="caseType" value="SCC" checked={data.caseType === 'SCC'} onChange={handleChange} className="w-4 h-4" />
+            <span className="text-sm font-medium" style={{marginLeft:"10px"}}>SCC (Summary)</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer whitespace-nowrap hover:text-indigo-600 transition-colors">
+            <input type="radio" name="caseType" value="MA" checked={data.caseType === 'MA'} onChange={handleChange} className="w-4 h-4" />
+            <span className="text-sm font-medium" style={{marginLeft:"10px"}}>M.A.(Miscellaneous Appllication)</span>
+        </label>
+    </div>
+</div>
+    {/* 2. Case Number Input */}
+    <div className="flex flex-col gap-1 ">
+        <label className="text-sm font-semibold text-gray-600 whitespace-nowrap">
+            {currentText.caseNo}
+        </label>
+        <input
+            type="text"
+            name="caseNo"
+            className="border p-2 rounded-lg outline-none focus:ring-2 ring-indigo-200 h-[42px]"
+            value={data.caseNo}
+            onChange={handleChange}
+            placeholder="No/Year"
+        />
+    </div>
 
-                <h3 className="text-lg font-semibold mb-3 text-gray-700 mt-6 border-t pt-4">{currentText.judicialDetails}</h3>
-                <div className="form-grid">
-                    <label style={{ gridColumn: 'span 2' }}>
+    {/* 3. Issue Date Input */}
+    <div className="flex flex-col gap-1 ">
+        <label className="text-sm font-semibold text-gray-600 whitespace-nowrap">
+            {language === 'Marathi' ? 'वॉरंट जारी तारीख:' : 'Warrant Issue Date:'}
+        </label>
+        <input
+            type="date"
+            name="issueDate"
+            className="border p-2 rounded-lg outline-none focus:ring-2 ring-indigo-200 h-[42px]"
+            value={data.issueDate}
+            onChange={handleChange}
+        />
+    </div>
+</div>
+
+                {/* <h3 className="text-lg font-semibold mb-3 text-gray-700 mt-6 border-t pt-4">{currentText.judicialDetails}</h3> */}
+                {/* <div className="form-grid"> */}
+                {/* <label style={{ gridColumn: 'span 2' }}>
                         {currentText.courtName}
-                        {/* data.courtName is automatically updated by useEffect/mergeData */}
                         <input
                             type="text"
                             name="courtName"
-                            value={data.courtName} 
+                            value={data.courtName}
                             onChange={handleChange}
                         />
-                    </label>
-                    <label>
+                    </label> */}
+                {/* <label>
                         {currentText.caseNo}
                         <input
                             type="text"
@@ -824,6 +897,15 @@ const ArrestWarrantApp = () => {
                         />
                     </label>
                     <label>
+                        {language === 'Marathi' ? 'वॉरंट जारी करण्याची तारीख:' : 'Warrant Issue Date:'}
+                        <input
+                            type="date"
+                            name="issueDate"
+                            value={data.issueDate}
+                            onChange={handleChange}
+                        />
+                    </label> */}
+                {/* <label>
                         {currentText.courtLocation}
                         <input
                             type="text"
@@ -831,8 +913,8 @@ const ArrestWarrantApp = () => {
                             value={data.courtLocationFooter}
                             onChange={handleChange}
                         />
-                    </label>
-                </div>
+                    </label> */}
+                {/* </div> */}
 
                 <h3 className="text-lg font-semibold mb-3 text-gray-700 mt-6 border-t pt-4">{currentText.accusedOffenseDetails}</h3>
                 <div className="form-grid">
@@ -845,7 +927,7 @@ const ArrestWarrantApp = () => {
                             onChange={handleChange}
                         />
                     </label>
-                    <label style={{ gridColumn: 'span 2' }}>
+                    <label >
                         {currentText.accusedAddress}
                         <input
                             type="text"
@@ -887,7 +969,7 @@ const ArrestWarrantApp = () => {
                         />
                     </label>
 
-                    <label>
+                    {/* <label>
                         {currentText.policeStationName}
                         <input
                             type="text"
@@ -895,8 +977,8 @@ const ArrestWarrantApp = () => {
                             value={data.policeStationName}
                             onChange={handleChange}
                         />
-                    </label>
-                    <label>
+                    </label> */}
+                    {/* <label>
                         {currentText.policeStationTaluka}
                         <input
                             type="text"
@@ -913,7 +995,7 @@ const ArrestWarrantApp = () => {
                             value={data.policeStationDistrict}
                             onChange={handleChange}
                         />
-                    </label>
+                    </label> */}
                 </div>
 
                 {/* 5. Bail/Surety Details (Always shown for input, conditional display in document) */}
@@ -962,8 +1044,8 @@ const ArrestWarrantApp = () => {
                     </div>
                 </>
 
-                <h3 className="text-lg font-semibold mb-3 text-gray-700 mt-6 border-t pt-4">{currentText.issueDateSection}</h3>
-                <div className="form-grid">
+                {/* <h3 className="text-lg font-semibold mb-3 text-gray-700 mt-6 border-t pt-4">{currentText.issueDateSection}</h3> */}
+                {/* <div className="form-grid">
                     <label>
                         {language === 'Marathi' ? 'वॉरंट जारी करण्याची तारीख:' : 'Warrant Issue Date:'}
                         <input
@@ -974,7 +1056,7 @@ const ArrestWarrantApp = () => {
                         />
                     </label>
                     <div style={{ gridColumn: 'span 3' }}></div>
-                </div>
+                </div> */}
 
 
                 <button className="print-button mt-8" onClick={handlePrint}>
