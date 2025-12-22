@@ -125,7 +125,7 @@ const updateCourtConfig = (newData) => {
 
             <div className={`fixed lg:relative w-64 min-h-screen bg-indigo-800 text-white z-20 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 shadow-2xl`}>
                 <div className="p-6 text-2xl font-extrabold border-b border-indigo-700 tracking-wider flex items-center bg-indigo-900">
-                    <Gavel className="mr-3 text-teal-400" size={28} /> मनमाड न्यायालय
+                    <Gavel className="mr-3 text-teal-400" size={28} />  न्यायालय
                 </div>
                 <nav className="p-4 space-y-2">
                     {navItems.map(item => (
