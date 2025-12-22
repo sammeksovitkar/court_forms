@@ -477,7 +477,7 @@ const AccusedSummonsApp = ({ courtConfig }) => {
                     आरोपीस समन्स माहिती भरा (Accused Summons Details - NI Act 138)
                 </h2>
                 <div className="form-grid">
-                    <label>
+                    {/* <label>
                         कोर्टाचे ठिकाण (Court Location):
                         <input
                             type="text"
@@ -485,7 +485,7 @@ const AccusedSummonsApp = ({ courtConfig }) => {
                             value={data.courtName}
                             onChange={handleChange}
                         />
-                    </label>
+                    </label> */}
                     <label>
                         संक्षिप्त फौ. खटला क्र. (SCC No.):
                         <input
@@ -522,7 +522,7 @@ const AccusedSummonsApp = ({ courtConfig }) => {
                             onChange={handleChange}
                         />
                     </label>
-                    <label>
+                    {/* <label>
                         पोलीस स्टेशनचे नांव (Police Station):
                         <input
                             type="text"
@@ -530,7 +530,7 @@ const AccusedSummonsApp = ({ courtConfig }) => {
                             value={data.policeStation}
                             onChange={handleChange}
                         />
-                    </label>
+                    </label> */}
                     <label>
                         समन्सची तारीख (Summon Date):
                         <input
