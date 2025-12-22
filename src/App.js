@@ -207,7 +207,7 @@ const LoginPage = ({ onLogin }) => {
                 <div className="p-8 bg-indigo-700 text-white text-center rounded-t-3xl">
                     <Gavel className="mx-auto mb-3 text-teal-400" size={48} />
                     <h1 className="text-3xl font-extrabold tracking-wider">न्यायालयीन प्रणाली</h1>
-                    <p className="text-indigo-200 mt-1">न्यायव्यवस्थापन ॲप्लिकेशन</p>
+                    <p className="text-indigo-200 mt-1">वॉरंट / समन्स / नोटीस तयार करणे </p>
                 </div>
                 
                 <form onSubmit={handleLogin} className="p-8 space-y-6">
