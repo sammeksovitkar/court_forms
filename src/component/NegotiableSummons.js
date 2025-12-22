@@ -1,25 +1,27 @@
-import React, { useState } from 'react';
+// import React, { useEffect, useState } from 'react';
+
+// Component for the printable document content (Accused Summons under NI Act 138)
+import React, { useEffect, useState } from 'react';
 
 // Component for the printable document content (Accused Summons under NI Act 138)
 const AccusedSummonsDocument = ({ data }) => {
-    
+    // Determine language from data
+    const isMarathi = data.printLanguage === 'marathi';
+
     // Utility function to convert ISO date (YYYY-MM-DD) to DD/MM/YYYY format
     const formatDateToIndian = (isoDate) => {
         if (!isoDate || isoDate.length !== 10) return isoDate;
-        // Expected format is YYYY-MM-DD
         const parts = isoDate.split('-');
         if (parts.length === 3) {
-            // Rearrange to DD/MM/YYYY
             return `${parts[2]}/${parts[1]}/${parts[0]}`;
         }
-        return isoDate; // Return original if format is unexpected
+        return isoDate;
     };
 
     // Helper function to render S.C.C. number
     const renderCaseNumber = (label, value) => {
         if (value && value.trim() !== '') {
-            // Assuming sccNo is in '1234/2025' format
-            return <p style={{ margin: '0 0 2px 0',textAlign:"right" }} >{label} <span className="data-placeholder">{value}</span></p>;
+            return <p style={{ margin: '0 0 2px 0', textAlign: "right" }} >{label} <span className="data-placeholder">{value}</span></p>;
         }
         return null;
     };
@@ -28,76 +30,174 @@ const AccusedSummonsDocument = ({ data }) => {
         <div className="printable-area" id="print-accused-content">
             <div className="summons-document">
                 {/* शीर्षलेख */}
-                <p className="align-center court-title" style={{fontSize:"19px"}}>
-                    <span className="data-placeholder">{data.courtLocation}</span> येथील न्यायदंडाधिकारी प्रथम वर्ग, <span className="data-placeholder">{data.courtLocation}</span>  यांचे न्यायालयात,
+                <p className="align-center court-title" style={{ fontSize: "22px" }}>
+                    <span className="data-placeholder">{data.courtName} ,</span>
                 </p>
-                <p className="align-center" style={{marginTop: '0'}}>
-                    (नमुना-१, अनुसूची-२, फौजदारी प्रक्रिया संहिता-४)
+                <p className="align-center" style={{ marginTop: '0' }}>
+                    {isMarathi
+                        ? "(नमुना-१, अनुसूची-२, फौजदारी प्रक्रिया संहिता-४)"
+                        : "(Form-1, Schedule-2, Code of Criminal Procedure-4)"}
                 </p>
-                <h3 className="align-center court-slogan">आरोपीस समन्स</h3>
-                
+                <h3 className="align-center court-slogan">
+                    {isMarathi ? "आरोपीस समन्स" : "SUMMONS TO ACCUSED"}
+                </h3>
+
                 <div style={{ marginBottom: '10px', width: '100%', lineHeight: '1.2' }}>
-                    {/* Assuming sccNo includes both number and year (e.g., 1234/2025) */}
-                    {renderCaseNumber('संक्षिप्त फौ. खटला क्र.', data.sccNo)}
+                    {renderCaseNumber(isMarathi ? 'संक्षिप्त फौ. खटला क्र.' : 'Summ. Crim. Case No.', data.sccNo)}
                 </div>
 
                 {/* तक्रारदार आणि आरोपी माहिती */}
                 <div style={{ marginTop: '10px', marginBottom: '10px', padding: '0 3mm' }}>
-                    <p style={{marginBottom: '5px', fontWeight: 'bold',textAlign:"right"}}>तक्रारदाराचे नाव व पत्ता: <span className="data-placeholder">{data.complainantName}</span></p>
-                    <p style={{marginBottom: '5px', fontWeight: 'bold'}}>प्रति,</p>
+                    <p style={{ marginBottom: '5px', fontWeight: 'bold', textAlign: "right" }}>
+                        {isMarathi ? "तक्रारदाराचे नाव व पत्ता: " : "Complainant Name & Address: "}
+                        <span className="data-placeholder">{data.complainantName}</span>
+                    </p>
+                    <p style={{ marginBottom: '5px', fontWeight: 'bold' }}>
+                        {isMarathi ? "प्रति," : "To,"}
+                    </p>
+
                     {/* पोलीस निरीक्षक */}
-                    <p style={{marginBottom: '5px'}}>पोलीस निरीक्षक,</p>
-                    <p style={{marginBottom: '10px'}}><span className="data-placeholder">{data.policeStation}</span> पोलीस स्टेशन</p>
-                    
+                    {data.policeStation.split(",").length > 1 ? data.policeStation.split(",").map((x, i) =>
+                        <p key={i} style={{ margin: '0' }}><span className="data-placeholder">{x}</span> </p>)
+                        : <p style={{ marginTop: '0' }}><span className="data-placeholder">{data.policeStation}</span> </p>}
+
                     {/* आरोपी */}
-                    <p style={{marginTop:"15px",marginLeft:"50px", fontWeight: 'bold'}}>आरोपी: <span className="data-placeholder">{data.accusedName} , {data.accusedAddress}</span></p>
-                    {/* <p style={{ textDecoration: 'underline' }}><span className="data-placeholder"></span></p> */}
+                    <p style={{ marginTop: "15px", marginLeft: "50px", fontWeight: 'bold' }}>
+                        {isMarathi ? "आरोपी: " : "Accused: "}
+                        <span className="data-placeholder">{data.accusedName} , {data.accusedAddress}</span>
+                    </p>
                 </div>
 
                 {/* सुप्रीम कोर्टाच्या आदेशानुसार अतिरिक्त निर्देश */}
                 <div style={{ marginTop: '15px', border: '1px solid black', padding: '10px' }}>
                     <p className="instruction-paragraph" >
-                        ज्या अर्थी, परक्राम्य संलेख अधिनियम, १९८१ च्या कलम १३८ सह कलम १४१ खालील दोषारोपास उत्तर देण्यासाठी आपली उपस्थिती आवश्यक असल्याने आपण व्यक्तीशः दिनांक <span className="data-placeholder">{formatDateToIndian(data.summonDate)}</span> रोजी सकाळी ठिक १०:३० वाजता दिवाणी व फौजदारी न्यायालय, <span className="data-placeholder">{data.courtLocation}</span>, ता. नांदगाव, जि. नाशिक समोर उपस्थित राहणे आवश्यक आहे. यात कसूर होऊ नये.
+                        {isMarathi
+                            ? `ज्या अर्थी, परक्राम्य संलेख अधिनियम, १८८१ च्या कलम १३८ सह कलम १४१ खालील दोषारोपास उत्तर देण्यासाठी आपली उपस्थिती आवश्यक असल्याने आपण व्यक्तीशः दिनांक `
+                            : `Whereas, your attendance is necessary to answer to a charge under Section 138 read with Section 141 of the Negotiable Instruments Act, 1881, you are hereby required to appear in person on date `}
+                        <span className="data-placeholder">{formatDateToIndian(data.summonDate)}</span>
+                        {isMarathi
+                            ? ` रोजी सकाळी ठिक १०:३० वाजता दिवाणी व फौजदारी न्यायालय, `
+                            : ` at 10:30 AM before the Civil & Criminal Court, `}
+                        <span className="data-placeholder">{data.courtName}</span>
+                        {isMarathi ? `, समोर उपस्थित राहणे आवश्यक आहे. यात कसूर होऊ नये.` : `, Fail not.`}
                     </p>
-                    <h4 style={{fontWeight: 'bold', textDecoration: 'underline', textAlign: 'center', margin: '0 0 10px 0'}}>अधिक निर्देश मा. सर्वोच्च न्यायालयाच्या आदेशानुसार पुढीलप्रमाणे आहेत:</h4>
-                    
+
+                    <h4 style={{ fontWeight: 'bold', textDecoration: 'underline', textAlign: 'center', margin: '0 0 10px 0' }}>
+                        {isMarathi
+                            ? "अधिक निर्देश मा. सर्वोच्च न्यायालयाच्या आदेशानुसार पुढीलप्रमाणे आहेत:"
+                            : "Further directions as per the orders of the Hon'ble Supreme Court are as follows:"}
+                    </h4>
+
                     <p className="instruction-paragraph">
-                        (अ) तुम्हांस असे स्पष्ट करण्यात येत आहे की, हा समन्स मिळाल्यानंतर त्वरित धनादेशाची रक्कम रु. <span className="data-placeholder">{data.amountCheque}</span> व त्यावर न्यायालयीने आकारलेले व्याज/खर्च रक्कम रु. <span className="data-placeholder">{data.amountInterest}</span> असे एकूण रक्कम रु. <span className="data-placeholder">{data.amountTotal}</span> न्यायालयात किंवा फिर्यादी यांच्या <span className="data-placeholder">{data.bankName}</span> बँकेतील बँक खाते क्र. <span className="data-placeholder">{data.accountNo}</span> यात दिनांक <span className="data-placeholder">{formatDateToIndian(data.datePaymentDeadline)}</span> पर्यंत जमा केल्यास तुम्हांला या न्यायालयात पुन्हा आदेशित केल्याशिवाय हजर होण्याची गरज नाही.
+                        (अ) {isMarathi
+                            ? `तुम्हांस असे स्पष्ट करण्यात येत आहे की, हा समन्स मिळाल्यानंतर त्वरित धनादेशाची रक्कम रु. `
+                            : `You are hereby informed that, immediately after receiving this summons, if the cheque amount of Rs. `}
+                        <span className="data-placeholder">{data.amountCheque}</span>
+                        {isMarathi ? ` व त्यावर न्यायालयीने आकारलेले व्याज/खर्च रक्कम रु. ` : ` and court-awarded interest/cost of Rs. `}
+                        <span className="data-placeholder">{data.amountInterest}</span>
+                        {isMarathi ? ` असे एकूण रक्कम रु. ` : ` totaling Rs. `}
+                        <span className="data-placeholder">{data.amountTotal}</span>
+                        {isMarathi
+                            ? ` न्यायालयात किंवा फिर्यादी यांच्या ${data.bankName} बँकेतील बँक खाते क्र. ${data.accountNo} यात दिनांक ${formatDateToIndian(data.datePaymentDeadline)} पर्यंत जमा केल्यास तुम्हांला या न्यायालयात पुन्हा आदेशित केल्याशिवाय हजर होण्याची गरज नाही.`
+                            : ` is deposited in the Court or in the Complainant's bank account at ${data.bankName}, A/c No. ${data.accountNo} by ${formatDateToIndian(data.datePaymentDeadline)}, you need not appear in this Court unless ordered again.`}
+                    </p>
+
+                    <p className="instruction-paragraph">
+                        (ब) {isMarathi
+                            ? "वरील रक्कम फिर्यादीच्या खात्यात जमा केल्याबद्दल फिर्यादीस व न्यायालयाला कागदपत्री माहिती देणे आवश्यक आहे."
+                            : "It is mandatory to provide documentary evidence to the Complainant and the Court regarding the deposit of the above amount."}
                     </p>
                     <p className="instruction-paragraph">
-                        (ब) वरील रक्कम फिर्यादीच्या खात्यात जमा केल्याबद्दल फिर्यादीस व न्यायालयाला कागदपत्री माहिती देणे आवश्यक आहे.
+                        (क) {isMarathi
+                            ? "तसेच, आपण रक्कम जमा केल्यानंतरही फिर्यादीने हरकत घेतल्यास न्यायालयाने ती हरकत मान्य केली तरच खटला पुढे चालेल, त्यावेळी तुम्हांस न्यायालयात हजर राहावे लागेल."
+                            : "Also, if the Complainant raises an objection after the deposit and the Court accepts it, the case will proceed, and you will have to appear in Court."}
                     </p>
                     <p className="instruction-paragraph">
-                        (क) तसेच, आपण रक्कम जमा केल्यानंतरही फिर्यादीने हरकत घेतल्यास न्यायालयाने ती हरकत मान्य केली तरच खटला पुढे चालेल, त्यावेळी तुम्हांस न्यायालयात हजर राहावे लागेल.
+                        (ड) {isMarathi
+                            ? "खटला पुढे चालला तर, तुम्हांस या न्यायालयात हजर राहून तुमचा बचाव कसा योग्य आहे हे प्रथम सिद्ध करावा लागेल. त्याकरिता न्यायालय आपणास विशिष्ट प्रश्न विचारू शकते."
+                            : "If the trial proceeds, you must appear in Court and first prove how your defense is valid. For this, the Court may ask you specific questions."}
                     </p>
                     <p className="instruction-paragraph">
-                        (ड) खटला पुढे चालला तर, तुम्हांस या न्यायालयात हजर राहून तुमचा बचाव कसा योग्य आहे हे प्रथम सिद्ध करावा लागेल. त्याकरिता न्यायालय आपणास विशिष्ट प्रश्न विचारू शकते.
+                        (ई) {isMarathi
+                            ? "प्रकरण पुढे चालले तरी प्रकरणादरम्यान आपण तडजोडीची बोलणी करू शकता किंवा 'प्ली बार्गेनिंग' (Plea Bargaining) च्या तरतुदी अनुसरून गुन्हा कबूल करू शकता."
+                            : "Even if the case proceeds, you may engage in settlement talks or plead guilty under the provisions of 'Plea Bargaining'."}
                     </p>
                     <p className="instruction-paragraph">
-                        (ई) प्रकरण पुढे चालले तरी प्रकरणादरम्यान आपण तडजोडीची बोलणी करू शकता किंवा 'प्ली बार्गेनिंग' (Plea Bargaining) च्या तरतुदी अनुसरून गुन्हा कबूल करू शकता.
+                        {isMarathi ? "आज, दिनांक " : "Today, date "}
+                        <span className="data-placeholder" style={{ fontWeight: 'bold' }}>{formatDateToIndian(data.currentDate)}</span>
+                        {isMarathi ? " रोजी माझ्या सहीने आणि कोर्टाच्या शिक्क्यानिशी दिले." : " given under my hand and the seal of the Court."}
                     </p>
-                    <p className="instruction-paragraph">
-                        आज, दिनांक <span className="data-placeholder" style={{fontWeight: 'bold'}}>{formatDateToIndian(data.currentDate)}</span> रोजी माझ्या सहीने आणि कोर्टाच्या शिक्क्यानिशी दिले.
-                    </p>
-                     {/* <p  className="instruction-paragraph" style={{ marginTop: '30px',marginLeft:"200px", textAlign:"right", }}>आदेशावरून,</p> */}
                 </div>
 
-                {/* तळटीप/स्वाक्षरी ब्लॉक */}
-                <div className="footer-section">
-                    
-                     
-                    
-                    <div className="signature-block align-right" style={{
-                        textAlign: 'right', // Block position right
-                        width: 'auto', 
+                <p style={{ marginBottom: '0', marginTop: '30px', marginLeft: "550px", marginBottom: "50px" }}>
+                    {isMarathi ? "आदेशावरून," : "By Order,"}
+                </p>
+
+                {/* <div className="footer-section" style={{ marginTop: '30px', textAlign: 'right' }}>
+                    <div className="signature-block" style={{
+                        width: 'auto',
                         display: 'inline-block',
-                        float: 'right' // Ensures it stays right and wraps tightly around content
-                    }}> 
-        
-                      <p style={{marginBottom: '0', marginTop: '0', textAlign: 'center' ,marginBottom:"50px"}}>आदेशावरून,</p>
-                        <p style={{marginBottom: '0', marginTop: '0', textAlign: 'center'}}>सहायक अधीक्षक</p>
-                        <p style={{marginBottom: '0', marginTop: '0', textAlign: 'center'}}>दिवाणी व फौजदारी न्यायालय, <span className="data-placeholder">{data.courtLocation}</span>,</p>
-                        <p style={{marginBottom: '0', marginTop: '0', textAlign: 'center'}}>ता. नांदगाव जि. नाशिक (महाराष्ट्र)</p>
+                        paddingTop: '5px',
+                        marginRight: '0px',
+                        textAlign: 'center'
+                    }}>
+                        {(() => {
+                            const originalName = data.courtName || "";
+                            const parts = originalName.split(',').map(p => p.trim());
+                            const trimmedParts = parts.length > 2 ? parts.slice(0, -2) : parts;
+                            const cleanedName = trimmedParts.join(', ');
+                            const firstCommaIndex = cleanedName.indexOf(',');
+
+                            if (firstCommaIndex !== -1) {
+                                const designation = cleanedName.substring(0, firstCommaIndex).trim();
+                                const remainingAddress = cleanedName.substring(firstCommaIndex + 1).trim();
+
+                                return (
+                                    <>
+                                        <p style={{ marginBottom: '0', marginTop: '0', textAlign: "center" }}>
+                                            {isMarathi ? "सहायक अधीक्षक" : "Assistant Superintendent"}
+                                        </p>
+                                        <p style={{ marginBottom: '0', marginTop: '10px', fontWeight: 'bold' }}>
+                                            {designation}
+                                        </p>
+                                        <p style={{ marginBottom: '0', marginTop: '0', textAlign: "center" }}>
+                                            {remainingAddress}
+                                        </p>
+                                    </>
+                                );
+                            } else {
+                                return (
+                                    <div>
+                                        <p style={{ marginBottom: '0', marginTop: '10px', fontWeight: 'bold' }}>
+                                            {cleanedName}
+                                        </p>
+                                    </div>
+                                );
+                            }
+                        })()}
+                    </div>
+                </div> */}
+
+                <div style={{ marginTop: '10px', marginBottom: '10px', padding: '0 0mm', textAlign: 'right' }}>
+                    <div style={{
+                        display: 'inline-block',
+                        textAlign: 'center',
+                        minWidth: '200px' // Adjust width as needed for better centering look
+                    }}>
+                        <p style={{ marginBottom: '0', marginTop: '0' ,textAlign:"center"}}>  {isMarathi ? "सहायक अधीक्षक" : "Assistant Superintendent"}</p>
+
+                        {(() => {
+                            const psText = data.courtLevel || "";
+                            // Split by comma and map each part
+                            return psText.split(',').map((part, index) => (
+                                <div>
+                                    <p key={index} style={{ margin: 0, padding: 0, fontWeight: index === 0 ? 'bold' : 'normal', textAlign: "center" }}>
+                                        {part.trim()}
+                                    </p>
+                                </div>
+                            ));
+                        })()}
+                        <p style={{ margin: 0, padding: 0, textAlign: "center" }}>{data.courtVillage}</p>
                     </div>
                 </div>
             </div>
@@ -107,10 +207,10 @@ const AccusedSummonsDocument = ({ data }) => {
 
 
 // The main application component
-const AccusedSummonsApp = () => {
+const AccusedSummonsApp = ({ courtConfig }) => {
     // Initial Data specific to NI Act 138 cases
     const initialData = {
-        courtLocation: 'मनमाड शहर',
+        courtName: '',
         sccNo: '',
         complainantName: '',
         accusedName: '',
@@ -124,9 +224,15 @@ const AccusedSummonsApp = () => {
         accountNo: '',
         datePaymentDeadline: new Date().toISOString().substring(0, 10), // Payment deadline
         currentDate: new Date().toISOString().substring(0, 10), // Date of Summons Issuance
+        printLanguage: "",
+        courtLevel: '',
+        courtVillage: '',
     };
 
     const [data, setData] = useState(initialData);
+    const [printLanguage, setPrintLanguage] = useState("");
+
+
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -143,7 +249,7 @@ const AccusedSummonsApp = () => {
             return newData;
         });
     };
-    
+
     const handlePrint = () => {
         window.print();
     };
@@ -153,6 +259,26 @@ const AccusedSummonsApp = () => {
         const num = parseInt(amount) || 0;
         return num.toLocaleString('en-IN'); // Using Indian locale for number formatting
     };
+
+    useEffect(() => {
+        const isMar = courtConfig.language === 'marathi';
+        setPrintLanguage(isMar ? 'Marathi' : 'English');
+
+        setData(prev => ({
+            ...prev,
+            // Mapping from your dashboard config
+            courtName: courtConfig.fullOfficeName || '',
+            policeStation: courtConfig.policeStation || '',
+            printLanguage: courtConfig.language,
+            courtLevel: courtConfig.courtLevel,
+            courtVillage: courtConfig.courtVillage,
+            //  courtNameFooter: courtConfig.courtVillage || '',
+
+            // Language specific labels
+            //  dateLabel: isMar ? "दिनांक : " : "Date: ",
+            //  outWordNo: isMar ? "जा. क्र :" : "Outward No:"
+        }));
+    }, [courtConfig]);
 
     return (
         <div className="summons-container">
@@ -355,8 +481,8 @@ const AccusedSummonsApp = () => {
                         कोर्टाचे ठिकाण (Court Location):
                         <input
                             type="text"
-                            name="courtLocation"
-                            value={data.courtLocation}
+                            name="courtName"
+                            value={data.courtName}
                             onChange={handleChange}
                         />
                     </label>
@@ -427,7 +553,7 @@ const AccusedSummonsApp = () => {
 
                 <h3 className="text-lg font-semibold mb-3 text-gray-700 mt-6 border-t pt-4">आदेशातील रकमेचा तपशील (Amount Details)</h3>
                 <div className="form-grid">
-                     <label>
+                    <label>
                         धनादेशाची रक्कम (Cheque Amt Rs.):
                         <input
                             type="number"
