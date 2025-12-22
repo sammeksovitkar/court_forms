@@ -12,19 +12,18 @@ const DashboardOverview = ({ courtConfig = {}, setCourtConfig }) => {
         fullOfficeName = ''
     } = courtConfig;
 
-        const courtLevels = [
-{ mr: "प्रमुख जिल्हा व सत्र न्यायालय", en: "Principal District, & Sessions Court" },
-{ mr: "अतिरिक्त जिल्हा व सत्र न्यायालय", en: "Additional District, & Sessions Court" },
-{ mr: "अपर जिल्हा व अतिरिक्त सत्र न्यायालय", en: "Ad-hoc District ,& Additional Sessions Court" },
-{ mr: "तदर्थ जिल्हा व अतिरिक्त सत्र न्यायालय", en: "Joint District, & Additional Sessions Court" },
-{ mr: "दिवाणी न्यायाधिश वरिष्ठ स्तर", en: "Civil Judge Senior Division Court" },
+    const courtLevels = [
+{ mr: "प्रमुख जिल्हा व सत्र न्यायालय", en: "Principal District & Sessions Court" },
+{ mr: "अतिरिक्त जिल्हा व सत्र न्यायालय", en: "Additional District & Sessions Court" },
+{ mr: "अपर जिल्हा व अतिरिक्त सत्र न्यायालय", en: "Ad-hoc District & Additional Sessions Court" },
+{ mr: "तदर्थ जिल्हा व अतिरिक्त सत्र न्यायालय", en: "Joint District & Additional Sessions Court" },
+{ mr: "दिवाणी न्यायालय वरिष्ठ स्तर", en: "Civil Judge Senior Division Court" },
 { mr: "मुख्य न्यायदंडाधिकारी", en: "Chief Judicial Magistrate Court" },
-{ mr: "दिवाणी न्यायाधिश वरिष्ठ स्तर, व अतिरीक्त मुख्य न्यायदंडाधिकारी", en: "Civil Judge Senior Division, & Additional Chief Judicial Magistrate" },
-{ mr: "दिवाणी न्यायाधिश कनिष्ठ स्तर, व न्यायदंडाधिकारी प्रथम वर्ग", en: "Civil Judge Junior Division, & Judicial Magistrate First Class Court" },
+{ mr: "दिवाणी न्यायालय वरिष्ठ स्तर, व अतिरीक्त मुख्य न्यायदंडाधिकारी", en: "Civil Judge Senior Division, & Additional Chief Judicial Magistrate" },
+{ mr: "दिवाणी न्यायालय कनिष्ठ स्तर, व न्यायदंडाधिकारी प्रथम वर्ग", en: "Civil Judge Junior Division, & Judicial Magistrate, First Class Court" },
 { mr: "न्यायदंडाधिकारी प्रथम वर्ग, लोहमार्ग न्यायालय", en: "Judicial Magistrate First Class, Railway Court" },
-{ mr: "न्यायदंडाधिकारी प्रथम वर्ग, मोटर वाहन न्यायालय", en: "Judicial Magistrate First Class, Motor Vehicle Court" },
+{ mr: "न्यायदंडाधिकारी प्रथम वर्ग, मोटर वाहन न्यायालय", en: "Judicial Magistrate , First Class, Motor Vehicle Court" },
 ];
-
 
     const prefixes = {
         marathi: "पोलीस निरीक्षक, पोलीस स्टेशन ",
