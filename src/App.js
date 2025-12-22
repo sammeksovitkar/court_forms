@@ -40,7 +40,8 @@ const [courtConfig, setCourtConfig] = useState({
         courtVillage: '',
         taluka: '',
         district: '',
-        policeStation: ''
+        policeStation: '',
+        fullOfficeName:''
     });
     const navItems = [
         { id: 'dashboard', name: 'मुख्य डॅशबोर्ड (Dashboard)', icon: <BarChart2 size={20} /> },
