@@ -97,7 +97,7 @@ const PrintLayout = React.memo(({ data, printLanguage }) => {
   const {
     formType, caseType, caseNo, accusedName, lawSection, amount,
     summonDate, currentDate, courtLocation, policeStation, court, courtLocationEnglish,
-    witnesses
+    witnesses, courtVillage,courtLevel
   } = data;
 
   const lang = printLanguage;
@@ -353,7 +353,7 @@ const PrintLayout = React.memo(({ data, printLanguage }) => {
         </div>
       </div> */}
 
-
+      {/* 
       <div className="footer-section" style={{ marginTop: '30px', textAlign: 'right' }}>
         <div className="signature-block" style={{
           width: 'auto',
@@ -401,6 +401,29 @@ const PrintLayout = React.memo(({ data, printLanguage }) => {
             }
           })()}
         </div>
+      </div> */}
+
+      <div style={{ marginTop: '10px', marginBottom: '10px', padding: '0 0mm', textAlign: 'right' }}>
+        <div style={{
+          display: 'inline-block',
+          textAlign: 'center',
+          minWidth: '200px' // Adjust width as needed for better centering look
+        }}>
+          <p style={{ marginBottom: '0', marginTop: '0' }}>{t('footer_designation_1')}</p>
+
+          {(() => {
+            const psText = courtLevel || "";
+            // Split by comma and map each part
+            return psText.split(',').map((part, index) => (
+              <div>
+                <p key={index} style={{ margin: 0, padding: 0, fontWeight: index === 0 ? 'bold' : 'normal', textAlign: "center" }}>
+                  {part.trim()}
+                </p>
+              </div>
+            ));
+          })()}
+           <p style={{ margin: 0, padding: 0, textAlign: "center" }}>{courtVillage}</p>
+        </div>
       </div>
     </div>
   );
@@ -431,6 +454,8 @@ const SummonsFormApp = ({ courtConfig }) => {
     witnesses: [
       { name: '', address: '' },
     ],
+    courtLevel : '', 
+        courtVillage : '', 
   });
   // ✨ NEW STATE FOR PRINT LANGUAGE
   const [printLanguage, setPrintLanguage] = useState(courtConfig.language === 'marathi' ? 'Marathi' : 'English');
@@ -567,6 +592,8 @@ const SummonsFormApp = ({ courtConfig }) => {
       // Mapping from your dashboard config
       court: courtConfig.fullOfficeName || '',
       policeStation: courtConfig.policeStation || '',
+       courtLevel : courtConfig.courtLevel, 
+        courtVillage : courtConfig.courtVillage,
       //  courtLocationFooter: courtConfig.courtVillage || '',
 
       // Language specific labels
@@ -918,9 +945,9 @@ const SummonsFormApp = ({ courtConfig }) => {
             placeholder="DD/MM/YYYY"
           />
         </div>
- <button onClick={handlePrint} className="print-button mt-6">
-                    समन्स प्रिंट करा (Print Summons) 🖨️
-                </button>
+        <button onClick={handlePrint} className="print-button mt-6">
+          समन्स प्रिंट करा (Print Summons) 🖨️
+        </button>
 
         {/* प्रिंटसाठी लपवलेला भाग - येथे PrintLayout वापरला जातो */}
         <div id="print-area" style={{ display: 'none' }}>
