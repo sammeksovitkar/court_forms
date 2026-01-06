@@ -13,32 +13,35 @@ const DashboardOverview = ({ courtConfig = {}, setCourtConfig }) => {
     } = courtConfig;
 
     const courtLevels = [
-{ mr: "प्रमुख जिल्हा व सत्र न्यायालय", en: "Principal District & Sessions Court" },
-{ mr: "अतिरिक्त जिल्हा व सत्र न्यायालय", en: "Additional District & Sessions Court" },
-{ mr: "अपर जिल्हा व अतिरिक्त सत्र न्यायालय", en: "Ad-hoc District & Additional Sessions Court" },
-{ mr: "तदर्थ जिल्हा व अतिरिक्त सत्र न्यायालय", en: "Joint District & Additional Sessions Court" },
-{ mr: "दिवाणी न्यायालय वरिष्ठ स्तर", en: "Civil Judge Senior Division Court" },
-{ mr: "मुख्य न्यायदंडाधिकारी", en: "Chief Judicial Magistrate Court" },
-{ mr: "दिवाणी न्यायालय वरिष्ठ स्तर, व अतिरीक्त मुख्य न्यायदंडाधिकारी", en: "Civil Judge Senior Division, & Additional Chief Judicial Magistrate" },
-{ mr: "दिवाणी न्यायालय कनिष्ठ स्तर, व न्यायदंडाधिकारी प्रथम वर्ग", en: "Civil Judge Junior Division, & Judicial Magistrate, First Class Court" },
-{ mr: "न्यायदंडाधिकारी प्रथम वर्ग, लोहमार्ग न्यायालय", en: "Judicial Magistrate First Class, Railway Court" },
-{ mr: "न्यायदंडाधिकारी प्रथम वर्ग, मोटर वाहन न्यायालय", en: "Judicial Magistrate , First Class, Motor Vehicle Court" },
-];
+        { mr: "प्रमुख जिल्हा व सत्र न्यायालय", en: "Principal District & Sessions Court" },
+        { mr: "अतिरिक्त जिल्हा व सत्र न्यायालय", en: "Additional District & Sessions Court" },
+        { mr: "अपर जिल्हा व अतिरिक्त सत्र न्यायालय", en: "Ad-hoc District & Additional Sessions Court" },
+        { mr: "तदर्थ जिल्हा व अतिरिक्त सत्र न्यायालय", en: "Joint District & Additional Sessions Court" },
+        { mr: "दिवाणी न्यायालय वरिष्ठ स्तर", en: "Civil Judge Senior Division Court" },
+        { mr: "मुख्य न्यायदंडाधिकारी", en: "Chief Judicial Magistrate Court" },
+        { mr: "दिवाणी न्यायालय वरिष्ठ स्तर, व अतिरीक्त मुख्य न्यायदंडाधिकारी", en: "Civil Judge Senior Division, & Additional Chief Judicial Magistrate" },
+        { mr: "दिवाणी न्यायालय कनिष्ठ स्तर, व न्यायदंडाधिकारी प्रथम वर्ग", en: "Civil Judge Junior Division, & Judicial Magistrate, First Class Court" },
+        { mr: "न्यायदंडाधिकारी प्रथम वर्ग, लोहमार्ग न्यायालय", en: "Judicial Magistrate First Class, Railway Court" },
+        { mr: "न्यायदंडाधिकारी प्रथम वर्ग, मोटर वाहन न्यायालय", en: "Judicial Magistrate , First Class, Motor Vehicle Court" },
+    ];
 
     const prefixes = {
         marathi: "पोलीस निरीक्षक, पोलीस स्टेशन ",
         english: "Police Inspector, Police Station "
     };
 
+    // This handles switching languages while attempting to preserve the station name
     const handleLanguageChange = (newLang) => {
         const oldPrefix = prefixes[language];
         const newPrefix = prefixes[newLang];
         let updatedPs = policeStation;
 
-        if (!policeStation || policeStation === oldPrefix) {
-            updatedPs = newPrefix;
-        } else if (policeStation.startsWith(oldPrefix)) {
+        // If the current text starts with the old prefix, swap it.
+        // Otherwise, if it's empty, just use the new prefix.
+        if (policeStation.startsWith(oldPrefix)) {
             updatedPs = policeStation.replace(oldPrefix, newPrefix);
+        } else if (!policeStation) {
+            updatedPs = newPrefix;
         }
 
         setCourtConfig({ 
@@ -49,8 +52,6 @@ const DashboardOverview = ({ courtConfig = {}, setCourtConfig }) => {
     };
 
     useEffect(() => {
-        // Logic: Find if the entered text matches a known court level to translate it,
-        // otherwise use the user's manual input exactly as is.
         const match = courtLevels.find(l => l.mr === courtLevel || l.en === courtLevel);
         const displayLevel = match ? (language === 'marathi' ? match.mr : match.en) : courtLevel;
 
@@ -85,14 +86,12 @@ const DashboardOverview = ({ courtConfig = {}, setCourtConfig }) => {
         });
     };
 
+    // UPDATED: Completely free typing allowed
     const handlePsChange = (e) => {
-        const val = e.target.value;
-        const currentPrefix = prefixes[language];
-        if (val.startsWith(currentPrefix)) {
-            setCourtConfig({ ...courtConfig, policeStation: val });
-        } else if (val.length < currentPrefix.length) {
-            setCourtConfig({ ...courtConfig, policeStation: currentPrefix });
-        }
+        setCourtConfig({ 
+            ...courtConfig, 
+            policeStation: e.target.value 
+        });
     };
 
     return (
@@ -117,10 +116,9 @@ const DashboardOverview = ({ courtConfig = {}, setCourtConfig }) => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* UPDATED: Manual Input + Datalist Suggestions */}
                     <div className="flex flex-col gap-1">
                         <label className="text-sm font-semibold text-gray-600">
-                            {language === 'marathi' ? 'न्यायालयाचा स्तर (निवडा किंवा टाइप करा)' : 'Court Level (Select or Type)'}
+                            {language === 'marathi' ? 'न्यायालयाचा स्तर' : 'Court Level'}
                         </label>
                         <input 
                             list="court-level-options"
@@ -153,11 +151,15 @@ const DashboardOverview = ({ courtConfig = {}, setCourtConfig }) => {
 
                     <div className="flex flex-col gap-1 md:col-span-2 lg:col-span-1">
                         <label className="text-sm font-semibold text-gray-600">{language === 'marathi' ? 'पोलीस स्टेशन' : 'Police Station'}</label>
-                        <input type="text" className="border p-2 rounded-lg outline-none ring-indigo-200 focus:ring-2" value={policeStation || prefixes[language]} onChange={handlePsChange} />
+                        <input 
+                            type="text" 
+                            className="border p-2 rounded-lg outline-none ring-indigo-200 focus:ring-2" 
+                            value={policeStation} 
+                            onChange={handlePsChange} 
+                        />
                     </div>
                 </div>
 
-                {/* Real-time Preview */}
                 <div className="mt-8 p-6 bg-gradient-to-br from-indigo-600 to-blue-700 rounded-2xl text-white shadow-xl relative overflow-hidden">
                     <div className="relative z-10">
                         <p className="text-xs font-bold text-indigo-200 uppercase tracking-widest mb-2 flex items-center gap-2">
