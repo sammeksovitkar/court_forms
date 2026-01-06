@@ -298,12 +298,17 @@ const PrintLayout = React.memo(({ data, printLanguage }) => {
     <div className="a4-page-content" style={{ fontSize: isMarathi ? "13pt" : "11pt", }}>
 
       {/* 1. शीर्षक / न्यायालय */}
-      {policeStation === "पोलीस निरीक्षक,पोलीस स्टेशन मनमाड शहर" ? "" :
-        <div style={{ lineHeight: "0.8", textAlign: "right" }}>
-          <p>{isMarathi ? "जा.क्र." : "O.No"}/&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/202</p>
-          <p>{isMarathi ? "दिनांक :" : "Date :"} &nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;  &nbsp; /202</p>
-        </div>
-      }
+      {/* Logic: Trim extra spaces and check if "मनमाड" exists in the string */}
+{policeStation && (policeStation.trim().includes("मनमाड") || policeStation.toLowerCase().includes("manmad")) ? null : (
+  <div style={{ lineHeight: "0.8", textAlign: "right" }}>
+    <p>
+      {isMarathi ? "जा.क्र." : "O.No"}/&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/202
+    </p>
+    <p>
+      {isMarathi ? "दिनांक :" : "Date :"} &nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;  &nbsp; /202
+    </p>
+  </div>
+)}
 
       <p className="align-center court-title" style={{ fontWeight: "bold", fontSize: isMarathi ? "18pt" : "14pt", marginBottom: '5px' }}>
         {court}
@@ -557,7 +562,7 @@ const SummonsFormApp = ({ courtConfig }) => {
             .court-title { font-size: ${isMarathiPrint ? '16pt' : '14pt'}; font-weight: bold; }
             .court-slogan { font-size: ${isMarathiPrint ? '18pt' : '16pt'}; font-weight: bold; border-bottom: 2px solid #000; margin: 15px 0; }
             .body-paragraph { text-align: justify; margin-bottom: 12px; line-height: 1.6; }
-            .data-placeholder { font-weight: bold; border-bottom: 1px dotted #000; padding: 0 4px; }
+            .data-placeholder { font-weight: bold;  #000; padding: 0 4px; }
             .witness-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
             .witness-table th, .witness-table td { border: 1px solid black; padding: 4px 6px; }
             .signature-block { text-align: center; width: 40%; line-height: 1.3; }
