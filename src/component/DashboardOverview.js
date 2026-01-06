@@ -12,35 +12,43 @@ const DashboardOverview = ({ courtConfig = {}, setCourtConfig }) => {
         fullOfficeName = ''
     } = courtConfig;
 
+    const prefixes = {
+        marathi: "पोलीस निरीक्षक, पोलीस स्टेशन ",
+        english: "Police Inspector, Police Station "
+    };
+
     const courtLevels = [
         { mr: "प्रमुख जिल्हा व सत्र न्यायालय", en: "Principal District & Sessions Court" },
         { mr: "अतिरिक्त जिल्हा व सत्र न्यायालय", en: "Additional District & Sessions Court" },
         { mr: "अपर जिल्हा व अतिरिक्त सत्र न्यायालय", en: "Ad-hoc District & Additional Sessions Court" },
         { mr: "तदर्थ जिल्हा व अतिरिक्त सत्र न्यायालय", en: "Joint District & Additional Sessions Court" },
         { mr: "दिवाणी न्यायालय वरिष्ठ स्तर", en: "Civil Judge Senior Division Court" },
-        { mr: "मुख्य न्यायदंडाधिकारी", en: "Chief Judicial Magistrate Court" },
+        { mr: "मुख्य न्यायदंडधिकारी", en: "Chief Judicial Magistrate Court" },
         { mr: "दिवाणी न्यायालय वरिष्ठ स्तर, व अतिरीक्त मुख्य न्यायदंडाधिकारी", en: "Civil Judge Senior Division, & Additional Chief Judicial Magistrate" },
-        { mr: "दिवाणी न्यायालय कनिष्ठ स्तर, व न्यायदंडाधिकारी प्रथम वर्ग", en: "Civil Judge Junior Division, & Judicial Magistrate, First Class Court" },
-        { mr: "न्यायदंडाधिकारी प्रथम वर्ग, लोहमार्ग न्यायालय", en: "Judicial Magistrate First Class, Railway Court" },
-        { mr: "न्यायदंडाधिकारी प्रथम वर्ग, मोटर वाहन न्यायालय", en: "Judicial Magistrate , First Class, Motor Vehicle Court" },
+        { mr: "दिवाणी न्यायालय कनिष्ठ स्तर, व न्यायदंडधिकारी प्रथम वर्ग", en: "Civil Judge Junior Division, & Judicial Magistrate, First Class Court" },
+        { mr: "न्यायदंडधिकारी प्रथम वर्ग, लोहमार्ग न्यायालय", en: "Judicial Magistrate First Class, Railway Court" },
+        { mr: "न्यायदंडधिकारी प्रथम वर्ग, मोटर वाहन न्यायालय", en: "Judicial Magistrate , First Class, Motor Vehicle Court" },
     ];
 
-    const prefixes = {
-        marathi: "पोलीस निरीक्षक, पोलीस स्टेशन ",
-        english: "Police Inspector, Police Station "
-    };
+    // --- FIX 1: SET DEFAULT ON STARTUP ---
+    useEffect(() => {
+        // If the project starts and policeStation is empty, fill it with the default prefix
+        if (!policeStation) {
+            setCourtConfig(prev => ({
+                ...prev,
+                policeStation: prefixes[language]
+            }));
+        }
+    }, []); // Empty dependency array means this runs only once on mount
 
-    // This handles switching languages while attempting to preserve the station name
     const handleLanguageChange = (newLang) => {
         const oldPrefix = prefixes[language];
         const newPrefix = prefixes[newLang];
         let updatedPs = policeStation;
 
-        // If the current text starts with the old prefix, swap it.
-        // Otherwise, if it's empty, just use the new prefix.
         if (policeStation.startsWith(oldPrefix)) {
             updatedPs = policeStation.replace(oldPrefix, newPrefix);
-        } else if (!policeStation) {
+        } else if (!policeStation || policeStation === oldPrefix) {
             updatedPs = newPrefix;
         }
 
@@ -86,12 +94,8 @@ const DashboardOverview = ({ courtConfig = {}, setCourtConfig }) => {
         });
     };
 
-    // UPDATED: Completely free typing allowed
     const handlePsChange = (e) => {
-        setCourtConfig({ 
-            ...courtConfig, 
-            policeStation: e.target.value 
-        });
+        setCourtConfig({ ...courtConfig, policeStation: e.target.value });
     };
 
     return (
@@ -154,12 +158,14 @@ const DashboardOverview = ({ courtConfig = {}, setCourtConfig }) => {
                         <input 
                             type="text" 
                             className="border p-2 rounded-lg outline-none ring-indigo-200 focus:ring-2" 
-                            value={policeStation} 
+                            // --- FIX 2: FALLBACK VALUE ---
+                            value={policeStation || prefixes[language]} 
                             onChange={handlePsChange} 
                         />
                     </div>
                 </div>
 
+                {/* Real-time Preview */}
                 <div className="mt-8 p-6 bg-gradient-to-br from-indigo-600 to-blue-700 rounded-2xl text-white shadow-xl relative overflow-hidden">
                     <div className="relative z-10">
                         <p className="text-xs font-bold text-indigo-200 uppercase tracking-widest mb-2 flex items-center gap-2">
@@ -168,10 +174,15 @@ const DashboardOverview = ({ courtConfig = {}, setCourtConfig }) => {
                         <h3 className="text-xl md:text-2xl font-bold">
                             {fullOfficeName || (language === 'marathi' ? "कृपया माहिती भरा..." : "Please fill details...")}
                         </h3>
-                        {policeStation && (
-                            <p className="mt-2 text-indigo-100 opacity-90 font-medium border-t border-white/20 pt-2">
-                                {policeStation}
-                            </p>
+                        {/* --- HIDE LOGIC FOR MANMAD --- */}
+                        {!policeStation?.trim().includes("मनमाड") && (
+                            <div className="mt-2 text-indigo-100 opacity-90 font-medium border-t border-white/20 pt-2">
+                                <p>{policeStation || prefixes[language]}</p>
+                                <div className="mt-2 text-right text-xs">
+                                    <p>{language === 'marathi' ? "जा.क्र." : "O.No"}/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/202</p>
+                                    <p>{language === 'marathi' ? "दिनांक :" : "Date :"} &nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;/202</p>
+                                </div>
+                            </div>
                         )}
                     </div>
                     <Gavel size={120} className="absolute -right-4 -bottom-4 text-white opacity-10" />
