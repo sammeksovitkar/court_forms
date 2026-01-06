@@ -326,12 +326,17 @@ const ArrestWarrantDocument = ({ data, language }) => {
     return (
         <div className="printable-area" id="print-warrant-content" style={{ fontFamily: language === 'Marathi' ? 'Lohit Devanagari, Arial Unicode MS, Mangal, sans-serif' : 'Arial, sans-serif' }}>
             <div className="warrant-document">
-                {(data.policeStationName !== courtInfo.policeStation.mar && data.policeStationName !== courtInfo.policeStation.eng) ?
-                    <div style={{ lineHeight: "1.7", textAlign: "right", marginBottom: "15px" }}>
-                        <p style={{ textAlign: "right" }}> {translatedFixedData.outWordNo}  &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/202</p>
-                        <p style={{ textAlign: "right" }}>{translatedFixedData.date} &nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;  &nbsp; /202</p>
-                    </div>
-                    : ""}
+               {/* Logic: If it DOES NOT include "मनमाड", then show the Outward/Date div */}
+{!(data.policeStationName?.trim().includes("मनमाड") || data.policeStationName?.toLowerCase().includes("manmad")) ? (
+    <div style={{ lineHeight: "1.7", textAlign: "right", marginBottom: "15px" }}>
+        <p style={{ textAlign: "right" }}> 
+            {translatedFixedData.outWordNo}  &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/202
+        </p>
+        <p style={{ textAlign: "right" }}>
+            {translatedFixedData.date} &nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;  &nbsp; /202
+        </p>
+    </div>
+) : null}
                 {/* Court and Heading (FIXED FOR TRANSLATION) */}
                 <p className="align-center court-title" style={{ fontSize: "20px", fontWeight: 'bold', textDecoration: "underline", marginBottom: '5px' }}>
                     <span className="data-placeholder">{data.courtName}</span>
