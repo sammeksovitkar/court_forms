@@ -15,6 +15,7 @@ import ArrestWarrantApp from './component/Arrestwarrant';
 import MuddemalManagement from './component/MuddemalManagement';
 import StaffInformationTable from './component/StaffInformationTable';
 import AssetViewPage from './component/AssetViewPage'; 
+import Kharda from './component/Kharda';
 
 const App = () => {
     return (
@@ -46,7 +47,7 @@ const [courtConfig, setCourtConfig] = useState({
     const navItems = [
         { id: 'dashboard', name: 'मुख्य डॅशबोर्ड (Dashboard)', icon: <BarChart2 size={20} /> },
         { id: 'applications', name: 'अर्ज व्यवस्थापन (Applications)', icon: <ClipboardList size={20} /> },
-        // { id: 'stats', name: 'Library Management', icon: <BarChart2 size={20} /> },
+        { id: 'stats', name: 'Office Info', icon: <BarChart2 size={20} /> },
         // { id: 'staff', name: 'कर्मचारी व्यवस्थापन (Staff)', icon: <BarChart2 size={20} /> },
         // { id: 'muddemal', name: 'मुद्देमाल व्यवस्थापन (Muddemal)', icon: <Users size={20} /> },
     ];
@@ -89,7 +90,7 @@ const updateCourtConfig = (newData) => {
                 />
             );
         case 'stats': 
-            return <Liabrary />;
+            return <Kharda />;
         case 'staff': 
             return <StaffInformationTable title="कर्मचारी व्यवस्थापन" />;
         case 'muddemal': 
@@ -165,7 +166,9 @@ const updateCourtConfig = (newData) => {
                     </div>
                 </header>
                 <main className="flex-1 p-4 md:p-8">{renderContent()}</main>
-                <footer className="bg-white text-center p-3 text-xs text-gray-400 border-t mt-auto no-print">Developed By Sammek Sovitkar (JR Clerk Manmad City)</footer>
+                {/* <footer className="bg-white text-center p-3 text-xs text-gray-400 border-t mt-auto no-print"> &copy; {new Date().getFullYear()} </footer> */}
+                            <footer className="bg-white text-center p-3 text-xs text-gray-400 border-t mt-auto no-print">Developed By Sammek Sovitkar (JR Clark Manmad City)</footer>
+
             </div>
             {isSidebarOpen && <div className="fixed inset-0 bg-black opacity-50 z-10 lg:hidden" onClick={() => setIsSidebarOpen(false)}></div>}
         </div>
