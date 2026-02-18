@@ -291,7 +291,7 @@ const PrintLayout = React.memo(({ data, printLanguage }) => {
       );
     }
 
-  }, [formType, accusedPlaceholder, lawPlaceholder, summonDateFormatted, isMarathi, t, currentDateFormatted]);
+}, [formType, accusedPlaceholder, lawPlaceholder, summonDateFormatted, isMarathi, t, currentDateFormatted, amount]);
 
 
   return (
