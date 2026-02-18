@@ -47,7 +47,7 @@ const [courtConfig, setCourtConfig] = useState({
     const navItems = [
         { id: 'dashboard', name: 'मुख्य डॅशबोर्ड (Dashboard)', icon: <BarChart2 size={20} /> },
         { id: 'applications', name: 'अर्ज व्यवस्थापन (Applications)', icon: <ClipboardList size={20} /> },
-        { id: 'stats', name: 'Office Info', icon: <BarChart2 size={20} /> },
+        { id: 'stats', name: 'Kharda', icon: <BarChart2 size={20} /> },
         // { id: 'staff', name: 'कर्मचारी व्यवस्थापन (Staff)', icon: <BarChart2 size={20} /> },
         // { id: 'muddemal', name: 'मुद्देमाल व्यवस्थापन (Muddemal)', icon: <Users size={20} /> },
     ];
