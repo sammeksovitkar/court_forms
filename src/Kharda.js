@@ -1,342 +1,166 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import axios from "axios";
-import { useReactToPrint } from "react-to-print";
+import React, { useState, useMemo } from 'react';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
-const performLocalFilter = (data, searchTerm) => {
-  if (!searchTerm) return data;
-  const lowerSearch = searchTerm.toLowerCase();
-  return data.filter((row) =>
-    Object.values(row).some((val) => String(val || "").toLowerCase().includes(lowerSearch))
-  );
-};
+const Kharda = () => {
+  const [rawData, setRawData] = useState([]);
+  const [selection, setSelection] = useState({ start: '', end: '', all: false });
+  const [isLoading, setIsLoading] = useState(false);
 
-function Kharda() {
-  const api = "http://localhost:5000";
-  const initialForm = { caseNo: "", stage: "", order: "", writtenStatement: "", issue: "", partHurd: "", judgement: "", other: "", date: "" };
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  const [allData, setAllData] = useState([]);
-  const [filteredData, setFilteredData] = useState([]);
-  const [form, setForm] = useState(initialForm);
-  const [searchTerm, setSearchTerm] = useState("");
-  
-  // UI States
-  const [showFormModal, setShowFormModal] = useState(false);
-  const [showCalendarModal, setShowCalendarModal] = useState(false);
-  const [editId, setEditId] = useState(null);
-  const [currentDate, setCurrentDate] = useState(new Date()); 
-  const [printData, setPrintData] = useState([]);
-  const [printTitle, setPrintTitle] = useState("");
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const bstr = evt.target.result;
+      const wb = XLSX.read(bstr, { type: 'binary', cellDates: true });
+      const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
 
-  const contentRef = useRef(null);
+      // --- FIX: EXACT COLUMN MAPPING BASED ON YOUR IMAGE ---
+      const mappedData = json.map(row => {
+        // We trim and check for your specific column headers
+        const getVal = (targets) => {
+          const key = Object.keys(row).find(k => 
+            targets.some(t => k.trim().toLowerCase() === t.toLowerCase())
+          );
+          return key ? row[key] : "";
+        };
 
-  const getCategory = (caseNo) => {
-    const c = String(caseNo).toUpperCase();
-    if (c.includes("RCS") || c.includes("CMA") || c.includes("DARKHAST")) return "Civil";
-    return "Criminal";
+        return {
+          caseNum: getVal(['Cases', 'Case Number', 'Case']),
+          nextDate: getVal(['Next Date', 'Date']),
+          purpose: getVal(['Next Purpose', 'Purpose'])
+        };
+      });
+
+      setRawData(mappedData);
+    };
+    reader.readAsBinaryString(file);
   };
 
-  const fetchData = useCallback(async () => {
-    try {
-      const res = await axios.get(`${api}/data`);
-      if (Array.isArray(res.data)) {
-        const formatted = res.data.slice(1).map((row, index) => ({
-          id: index + 2,
-          caseNo: row[0] || "",
-          stage: row[1] || "",
-          order: row[2] || "",
-          writtenStatement: row[3] || "",
-          issue: row[4] || "",
-          partHurd: row[5] || "",
-          judgement: row[6] || "",
-          other: row[7] || "",
-          date: row[8] || "",
-          category: getCategory(row[0] || "")
-        }));
-        setAllData(formatted);
-        setFilteredData(performLocalFilter(formatted, searchTerm));
-      }
-    } catch (err) { console.error(err); }
-  }, [searchTerm]);
+  const filteredData = useMemo(() => {
+    if (selection.all) return rawData;
+    if (!selection.start || !selection.end) return [];
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+    const startDate = new Date(selection.start);
+    const endDate = new Date(selection.end);
 
-  const handlePrint = useReactToPrint({
-    contentRef,
-    documentTitle: printTitle,
-  });
+    return rawData.filter(item => {
+      if (!item.nextDate) return false;
+      let d = item.nextDate instanceof Date 
+        ? item.nextDate 
+        : new Date(item.nextDate.toString().split(/[-/]/).reverse().join('-'));
+      return d >= startDate && d <= endDate;
+    });
+  }, [rawData, selection]);
 
-  const printCategorizedCases = (dateStr, category) => {
-    const targetRecords = allData.filter(item => item.date === dateStr && item.category === category);
-    if (targetRecords.length > 0) {
-      const [year, month, day] = dateStr.split('-');
-      const formattedDate = `${day}/${month}/${year}`;
-      setPrintData(targetRecords);
-      setPrintTitle(`${category} Case Board - ${formattedDate}`);
-      setTimeout(() => {
-        if (contentRef.current) handlePrint();
-      }, 500);
-    } else {
-      alert("No records found to print.");
-    }
-  };
+  const generatePDF = () => {
+    if (filteredData.length === 0) return alert("No records selected!");
+    
+    setIsLoading(true);
+    setTimeout(() => {
+      const doc = new jsPDF();
+      let currentY = 20;
 
-  // Form Submission Logic
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (editId) {
-        await axios.put(`${api}/update/${editId}`, form);
-      } else {
-        await axios.post(`${api}/add`, form);
-      }
-      setShowFormModal(false);
-      setForm(initialForm);
-      fetchData();
-    } catch (err) {
-      console.error("Error saving record:", err);
-      alert("Error saving record. Check console.");
-    }
-  };
+      // Group by Date
+      const groups = filteredData.reduce((acc, row) => {
+        const dStr = row.nextDate instanceof Date 
+          ? row.nextDate.toLocaleDateString('en-GB').replace(/\//g, '-') 
+          : row.nextDate.toString().trim();
+        if (!acc[dStr]) acc[dStr] = [];
+        acc[dStr].push(row);
+        return acc;
+      }, {});
 
-  // Calendar Logic
-  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  const daysInMonth = (m, y) => new Date(y, m + 1, 0).getDate();
-  const startDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
+      // Sort dates and build PDF
+      Object.keys(groups).sort((a,b) => {
+        const toD = (s) => new Date(s.split('-').reverse().join('-'));
+        return toD(a) - toD(b);
+      }).forEach((dateKey) => {
+        const records = groups[dateKey];
+        const dayName = new Date(dateKey.split('-').reverse().join('-'))
+                        .toLocaleDateString('en-US', { weekday: 'long' });
 
-  const handleMonthChange = (e) => {
-    const newDate = new Date(currentDate);
-    newDate.setMonth(parseInt(e.target.value));
-    setCurrentDate(newDate);
-  };
+        if (currentY > 230) { doc.addPage(); currentY = 20; }
 
-  const changeYear = (offset) => {
-    const newDate = new Date(currentDate);
-    newDate.setFullYear(currentDate.getFullYear() + offset);
-    setCurrentDate(newDate);
-  };
+        // HEADER
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text(`DATE: ${dateKey} (${dayName.toUpperCase()})`, 14, currentY);
+        currentY += 6;
+        
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Took Seat at: _________  Rise at: _________`, 14, currentY);
+        currentY += 4;
 
-  const renderCalendar = () => {
-    const totalDays = daysInMonth(currentDate.getMonth(), currentDate.getFullYear());
-    const grid = [];
-    for (let i = 0; i < startDay; i++) grid.push(<div key={`e-${i}`} style={styles.calCellEmpty}></div>);
+        // TABLE - Using the exact mapped keys
+        autoTable(doc, {
+          startY: currentY,
+          head: [['Case Number', 'Next Purpose']],
+          body: records.map(r => [String(r.caseNum), String(r.purpose)]),
+          theme: 'grid',
+          headStyles: { fillColor: [40, 40, 40] },
+          styles: { fontSize: 9 },
+          didDrawPage: (data) => { currentY = data.cursor.y + 12; }
+        });
 
-    for (let day = 1; day <= totalDays; day++) {
-      const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      const dayCases = allData.filter(item => item.date === dateStr);
-      const civil = dayCases.filter(c => c.category === "Civil").length;
-      const criminal = dayCases.filter(c => c.category === "Criminal").length;
-      const isSun = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).getDay() === 0;
+        doc.text("Officer Signature: ____________________", 130, currentY);
+        currentY += 15;
+      });
 
-      grid.push(
-        <div key={day} style={styles.calCell}>
-          <div style={styles.dayHeader}>
-            <b>{day}</b> 
-            {isSun && <span style={{color:'red', fontSize: '10px'}}>Weekly Off</span>}
-          </div>
-          <div style={styles.badgeContainer}>
-            {civil > 0 && (
-              <div onClick={(e) => { e.stopPropagation(); printCategorizedCases(dateStr, "Civil"); }} style={styles.blueBar}>
-                Civil {civil}
-              </div>
-            )}
-            {criminal > 0 && (
-              <div onClick={(e) => { e.stopPropagation(); printCategorizedCases(dateStr, "Criminal"); }} style={styles.darkBlueBar}>
-                Criminal {criminal}
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    }
-    return grid;
+      doc.save("Legal_Diary_Report.pdf");
+      setIsLoading(false);
+    }, 100);
   };
 
   return (
     <div style={styles.container}>
-      <div style={styles.topBar}>
-        <h2>📋 Kharda Dashboard</h2>
-        <div style={{display:'flex', gap:'10px'}}>
-          <button style={styles.calTriggerBtn} onClick={() => setShowCalendarModal(true)}>📅 Open Calendar</button>
-          <button style={styles.addButton} onClick={() => { setEditId(null); setForm(initialForm); setShowFormModal(true); }}>+ Add Entry</button>
+      {isLoading && <div style={styles.loader}>Generating PDF... Please Wait</div>}
+      <div style={styles.card}>
+        <h2 style={{marginTop: 0}}>Court Diary Generator</h2>
+        <div style={styles.uploadArea}>
+            <input type="file" accept=".xlsx" onChange={handleFileUpload} />
+            {rawData.length > 0 && <p style={{color: 'green'}}>✓ {rawData.length} Records Loaded</p>}
         </div>
-      </div>
 
-      {/* Main Table View */}
-      <table style={styles.table}>
-        <thead style={styles.thead}>
-          <tr><th>Case No</th><th>Stage</th><th>Order</th><th>Date</th><th>Actions</th></tr>
-        </thead>
-        <tbody>
-          {allData.map(row => (
-            <tr key={row.id} style={styles.tr}>
-              <td><b>{row.caseNo}</b></td><td>{row.stage}</td><td>{row.order}</td><td>{row.date}</td>
-              <td>
-                <button onClick={() => { setEditId(row.id); setForm(row); setShowFormModal(true); }} style={styles.editBtn}>Edit</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {/* 📅 Calendar Modal */}
-      {showCalendarModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.calendarModalContent}>
-            <div style={styles.modalHeader}>
-              <div style={styles.calControls}>
-                <button onClick={() => changeYear(-1)} style={styles.navBtn}>« Prev</button>
-                <select value={currentDate.getMonth()} onChange={handleMonthChange} style={styles.select}>
-                  {monthNames.map((m, i) => <option key={m} value={i}>{m}</option>)}
-                </select>
-                <span style={{fontSize:'20px', fontWeight:'bold'}}>{currentDate.getFullYear()}</span>
-                <button onClick={() => changeYear(1)} style={styles.navBtn}>Next »</button>
-              </div>
-              <button onClick={() => setShowCalendarModal(false)} style={styles.closeBtn}>Close</button>
+        {rawData.length > 0 && (
+          <div style={{marginTop: '20px'}}>
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <input type="date" style={styles.input} onChange={e => setSelection({...selection, start: e.target.value, all: false})} />
+              <input type="date" style={styles.input} onChange={e => setSelection({...selection, end: e.target.value, all: false})} />
             </div>
-            <div style={styles.calendarContainer}>
-               <div style={styles.weekHeaderGrid}>{["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d => <div key={d} style={styles.weekDay}>{d}</div>)}</div>
-               <div style={styles.calendarGrid}>{renderCalendar()}</div>
+            <button 
+                onClick={() => setSelection({...selection, all: !selection.all})} 
+                style={selection.all ? styles.btnActive : styles.btnSec}
+            >
+              {selection.all ? "Custom Range Mode" : "Select All Records"}
+            </button>
+            <div style={styles.statBox}>
+              Selected: <b>{filteredData.length} Records</b>
             </div>
+            <button onClick={generatePDF} disabled={filteredData.length === 0} style={styles.btnPrimary}>
+              Download Professional PDF
+            </button>
           </div>
-        </div>
-      )}
-
-      {/* ➕ Add/Edit Entry Modal */}
-      {showFormModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.formModalContent}>
-            <h3 style={{ marginTop: 0 }}>{editId ? "Edit Case" : "Add New Case"}</h3>
-            <form onSubmit={handleSubmit} style={styles.gridForm}>
-              {Object.keys(initialForm).map((key) => (
-                <div key={key} style={styles.inputGroup}>
-                  <label style={styles.label}>{key.toUpperCase()}</label>
-                  <input 
-                    type={key === "date" ? "date" : "text"} 
-                    name={key} 
-                    value={form[key]} 
-                    onChange={(e) => setForm({...form, [e.target.name]: e.target.value})} 
-                    style={styles.input} 
-                    required={key === "caseNo" || key === "date"}
-                  />
-                </div>
-              ))}
-              <div style={styles.modalActions}>
-                <button type="button" onClick={() => setShowFormModal(false)} style={styles.cancelBtn}>Cancel</button>
-                <button type="submit" style={styles.saveBtn}>Save Record</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* 🖨️ Hidden Print Template */}
-      <div style={{ display: "none" }}>
-        <div ref={contentRef} style={styles.printContainer}>
-          {printData.length > 0 && (
-            <>
-              <div style={{ marginBottom: '10px', paddingBottom: '10px' }}>
-                <h2 style={{ textAlign: 'center', textDecoration: 'underline', margin: '0 0 15px 0', fontSize: '24px' }}>{printTitle}</h2>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', fontSize: '16px', fontWeight: 'bold' }}>
-                  <span>Start Time: ________________</span>
-                  <span>End Time: ________________</span>
-                </div>
-                <div style={{ borderBottom: '3px solid black', marginTop: '15px' }}></div>
-              </div>
-              <table style={styles.printTable}>
-                <thead>
-                  <tr style={{ backgroundColor: '#eeeeee' }}>
-                    <th style={{ ...styles.printTableCell, width: '15%' }}>Case No</th>
-                    <th style={{ ...styles.printTableCell, width: '12%' }}>Stage</th>
-                    <th style={{ ...styles.printTableCell, width: '13%' }}>Order</th>
-                    <th style={{ ...styles.printTableCell, width: '10%' }}>W/S</th>
-                    <th style={{ ...styles.printTableCell, width: '10%' }}>Issues</th>
-                    <th style={{ ...styles.printTableCell, width: '12%' }}>Judgement</th>
-                    <th style={{ ...styles.printTableCell, width: '28%' }}>Other Information</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {printData.map((c, i) => (
-                    <tr key={i}>
-                      <td style={{ ...styles.printTableCell, fontWeight: 'bold' }}>{c.caseNo}</td>
-                      <td style={styles.printTableCell}>{c.stage}</td>
-                      <td style={styles.printTableCell}>{c.order}</td>
-                      <td style={styles.printTableCell}>{c.writtenStatement}</td>
-                      <td style={styles.printTableCell}>{c.issue}</td>
-                      <td style={styles.printTableCell}>{c.judgement}</td>
-                      <td style={styles.printTableCell}>{c.other}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <div style={{ marginTop: '60px', display: 'flex', justifyContent: 'flex-end' }}>
-                <div style={{ textAlign: 'center' }}>
-                  <p>__________________________</p>
-                  <p style={{ fontWeight: 'bold', fontSize: '15px', marginTop: '5px' }}>Seal / Signature of Authority</p>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );
-}
+};
 
 const styles = {
-  container: { padding: "20px", fontFamily: "sans-serif" },
-  topBar: { display: "flex", justifyContent: "space-between", marginBottom: "20px" },
-  calTriggerBtn: { padding: "10px 20px", backgroundColor: "#6f42c1", color: "white", border: "none", borderRadius: "5px", cursor: "pointer" },
-  addButton: { padding: "10px 20px", backgroundColor: "#28a745", color: "white", border: "none", borderRadius: "5px", cursor: "pointer" },
-  table: { width: "100%", borderCollapse: "collapse" },
-  thead: { backgroundColor: "#f8f9fa", textAlign: "left" },
-  tr: { borderBottom: "1px solid #eee" },
-  editBtn: { backgroundColor: "#007bff", color: "white", border: "none", padding: "5px 10px", borderRadius: "4px", cursor: "pointer" },
-  modalOverlay: { position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.7)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 },
-  calendarModalContent: { backgroundColor: "white", padding: "20px", borderRadius: "10px", width: "95vw", height: "90vh", overflowY: "auto" },
-  formModalContent: { backgroundColor: "white", padding: "30px", borderRadius: "10px", width: "600px", boxShadow: "0 4px 15px rgba(0,0,0,0.2)" },
-  modalHeader: { display: "flex", justifyContent: "space-between", marginBottom: "20px" },
-  calControls: { display: "flex", gap: "10px", alignItems: "center" },
-  select: { padding: "8px" },
-  navBtn: { padding: "8px 12px", cursor: "pointer" },
-  closeBtn: { backgroundColor: "#dc3545", color: "white", border: "none", padding: "8px 15px", borderRadius: "4px", cursor: "pointer" },
-  calendarContainer: { border: "1px solid #ddd" },
-  weekHeaderGrid: { display: "grid", gridTemplateColumns: "repeat(7, 1fr)", backgroundColor: "#f0f0f0" },
-  weekDay: { padding: "10px", textAlign: "center", fontWeight: "bold", borderRight: "1px solid #ddd" },
-  calendarGrid: { display: "grid", gridTemplateColumns: "repeat(7, 1fr)" },
-  calCell: { borderRight: "1px solid #ddd", borderBottom: "1px solid #ddd", minHeight: "120px", padding: "5px" },
-  calCellEmpty: { borderRight: "1px solid #ddd", borderBottom: "1px solid #ddd", backgroundColor: "#f9f9f9" },
-  dayHeader: { display: "flex", justifyContent: "space-between", fontSize: "14px" },
-  badgeContainer: { display: "flex", flexDirection: "column", gap: "4px", marginTop: "10px" },
-  blueBar: { backgroundColor: "#3a87ad", color: "white", padding: "4px", fontSize: "12px", borderRadius: "3px", cursor: "pointer" },
-  darkBlueBar: { backgroundColor: "#2c3e50", color: "white", padding: "4px", fontSize: "12px", borderRadius: "3px", cursor: "pointer" },
-  gridForm: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px" },
-  inputGroup: { display: "flex", flexDirection: "column" },
-  label: { fontSize: "12px", fontWeight: "bold", marginBottom: "4px" },
-  input: { padding: "8px", border: "1px solid #ccc", borderRadius: "4px" },
-  modalActions: { gridColumn: "span 2", display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "15px" },
-  saveBtn: { padding: "10px 20px", backgroundColor: "#28a745", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" },
-  cancelBtn: { padding: "10px 20px", backgroundColor: "#6c757d", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" },
-  printContainer: {
-    padding: "20px 40px",
-    fontFamily: "'Times New Roman', Times, serif",
-    color: "black",
-    backgroundColor: "white",
-    width: "100%",
-  },
-  printTable: {
-    width: "100%",
-    borderCollapse: "collapse",
-    border: "2px solid black",
-    tableLayout: "fixed",
-  },
-  printTableCell: {
-    padding: "12px 6px",
-    border: "1px solid black",
-    textAlign: "center",
-    fontSize: "13px",
-    wordWrap: "break-word",
-    verticalAlign: "middle",
-  }
+  container: { background: '#f4f4f9', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', fontFamily: 'Arial' },
+  card: { background: '#fff', padding: '30px', borderRadius: '12px', boxShadow: '0 5px 15px rgba(0,0,0,0.1)', width: '400px' },
+  loader: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(255,255,255,0.9)', zIndex: 100, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '20px', fontWeight: 'bold' },
+  uploadArea: { border: '2px dashed #ccc', padding: '20px', textAlign: 'center', borderRadius: '8px' },
+  input: { flex: 1, padding: '10px', borderRadius: '5px', border: '1px solid #ddd' },
+  btnPrimary: { width: '100%', padding: '15px', background: '#000', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' },
+  btnSec: { width: '100%', padding: '10px', background: '#fff', border: '1px solid #ddd', borderRadius: '8px', marginBottom: '10px', cursor: 'pointer' },
+  btnActive: { width: '100%', padding: '10px', background: '#e7f3ff', border: '1px solid #3498db', color: '#3498db', borderRadius: '8px', marginBottom: '10px', fontWeight: 'bold' },
+  statBox: { padding: '15px', background: '#f8f9fa', borderRadius: '8px', marginBottom: '15px', textAlign: 'center' }
 };
 
 export default Kharda;
