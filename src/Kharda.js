@@ -3,9 +3,10 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-const Kharda = () => {
+const CourtDiaryFinalFix = () => {
   const [rawData, setRawData] = useState([]);
   const [selection, setSelection] = useState({ start: '', end: '', all: false });
+  const [caseType, setCaseType] = useState('civil'); 
   const [isLoading, setIsLoading] = useState(false);
 
   const handleFileUpload = (e) => {
@@ -18,9 +19,7 @@ const Kharda = () => {
       const wb = XLSX.read(bstr, { type: 'binary', cellDates: true });
       const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
 
-      // --- FIX: EXACT COLUMN MAPPING BASED ON YOUR IMAGE ---
       const mappedData = json.map(row => {
-        // We trim and check for your specific column headers
         const getVal = (targets) => {
           const key = Object.keys(row).find(k => 
             targets.some(t => k.trim().toLowerCase() === t.toLowerCase())
@@ -28,16 +27,45 @@ const Kharda = () => {
           return key ? row[key] : "";
         };
 
+        let rawDate = getVal(['Next Date', 'Date']);
+        let formattedDate = null;
+
+        // --- DATE FIXER LOGIC ---
+        if (rawDate instanceof Date) {
+          formattedDate = rawDate;
+        } else if (typeof rawDate === 'string') {
+          // Converts DD-MM-YYYY or DD/MM/YYYY to a real Date object
+          const parts = rawDate.split(/[-/]/);
+          if (parts.length === 3) {
+            // Assume format is DD-MM-YYYY
+            formattedDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+          }
+        }
+
         return {
           caseNum: getVal(['Cases', 'Case Number', 'Case']),
-          nextDate: getVal(['Next Date', 'Date']),
+          nextDate: formattedDate,
+          displayDate: rawDate, // Keep original for display
           purpose: getVal(['Next Purpose', 'Purpose'])
         };
-      });
+      }).filter(item => item.caseNum && item.nextDate); // Remove empty rows
 
       setRawData(mappedData);
     };
     reader.readAsBinaryString(file);
+  };
+
+  const getStageCategory = (purpose) => {
+    const p = String(purpose).toLowerCase();
+    if (p.includes('judgment') || p.includes('order')) return 'Judgment';
+    if (p.includes('argument')) return 'Arguments';
+    if (p.includes('part heard')) return 'Evidence PH';
+    if (p.includes('evidence') || p.includes('witness')) return 'Evidence';
+    if (p.includes('issue')) return 'Issues';
+    if (p.includes('hearing') || p.includes('say') || p.includes('compliance') || 
+        p.includes('summons') || p.includes('notice') || p.includes('citation') || 
+        p.includes('steps') || p.includes('awaiting') || p.includes('amended')) return 'Hearing';
+    return 'Other';
   };
 
   const filteredData = useMemo(() => {
@@ -45,104 +73,104 @@ const Kharda = () => {
     if (!selection.start || !selection.end) return [];
 
     const startDate = new Date(selection.start);
+    startDate.setHours(0,0,0,0);
     const endDate = new Date(selection.end);
+    endDate.setHours(23,59,59,999);
 
     return rawData.filter(item => {
-      if (!item.nextDate) return false;
-      let d = item.nextDate instanceof Date 
-        ? item.nextDate 
-        : new Date(item.nextDate.toString().split(/[-/]/).reverse().join('-'));
+      const d = item.nextDate;
       return d >= startDate && d <= endDate;
     });
   }, [rawData, selection]);
 
   const generatePDF = () => {
-    if (filteredData.length === 0) return alert("No records selected!");
-    
+    if (filteredData.length === 0) return alert("No records found for these dates!");
     setIsLoading(true);
+    
     setTimeout(() => {
-      const doc = new jsPDF();
-      let currentY = 20;
+      const doc = new jsPDF('p', 'mm', 'a4');
+      let currentY = 15;
 
-      // Group by Date
-      const groups = filteredData.reduce((acc, row) => {
-        const dStr = row.nextDate instanceof Date 
-          ? row.nextDate.toLocaleDateString('en-GB').replace(/\//g, '-') 
-          : row.nextDate.toString().trim();
+      // Sort and Group
+      const dateGroups = filteredData.reduce((acc, row) => {
+        const dStr = row.nextDate.toLocaleDateString('en-GB').replace(/\//g, '-');
         if (!acc[dStr]) acc[dStr] = [];
         acc[dStr].push(row);
         return acc;
       }, {});
 
-      // Sort dates and build PDF
-      Object.keys(groups).sort((a,b) => {
-        const toD = (s) => new Date(s.split('-').reverse().join('-'));
-        return toD(a) - toD(b);
-      }).forEach((dateKey) => {
-        const records = groups[dateKey];
-        const dayName = new Date(dateKey.split('-').reverse().join('-'))
-                        .toLocaleDateString('en-US', { weekday: 'long' });
+      Object.keys(dateGroups).forEach((dateKey) => {
+        const records = dateGroups[dateKey];
+        const stageGroups = { 'Judgment': [], 'Arguments': [], 'Hearing': [], 'Evidence': [], 'Evidence PH': [], 'Issues': [], 'Other': [] };
+        records.forEach(r => stageGroups[getStageCategory(r.purpose)].push(r.caseNum));
 
-        if (currentY > 230) { doc.addPage(); currentY = 20; }
+        const maxRows = Math.max(...Object.values(stageGroups).map(arr => arr.length));
+        if (currentY + (maxRows * 8) > 270) { doc.addPage(); currentY = 15; }
 
-        // HEADER
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text(`DATE: ${dateKey} (${dayName.toUpperCase()})`, 14, currentY);
-        currentY += 6;
-        
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
-        doc.text(`Took Seat at: _________  Rise at: _________`, 14, currentY);
-        currentY += 4;
+        doc.setFontSize(10).setFont("helvetica", "bold");
+        doc.text(`DATE: ${dateKey}`, 14, currentY);
+        currentY += 5;
 
-        // TABLE - Using the exact mapped keys
+        let head = [['Judgment', 'Arguments', 'Hearing', 'Evidence', 'Evid. PH']];
+        if (caseType === 'civil') head[0].push('Issues');
+        head[0].push('Other');
+
+        const body = [];
+        for (let i = 0; i < maxRows; i++) {
+          let row = [stageGroups['Judgment'][i] || '', stageGroups['Arguments'][i] || '', stageGroups['Hearing'][i] || '', stageGroups['Evidence'][i] || '', stageGroups['Evidence PH'][i] || ''];
+          if (caseType === 'civil') row.push(stageGroups['Issues'][i] || '');
+          row.push(stageGroups['Other'][i] || '');
+          body.push(row);
+        }
+
         autoTable(doc, {
           startY: currentY,
-          head: [['Case Number', 'Next Purpose']],
-          body: records.map(r => [String(r.caseNum), String(r.purpose)]),
+          head: head,
+          body: body,
           theme: 'grid',
-          headStyles: { fillColor: [40, 40, 40] },
-          styles: { fontSize: 9 },
-          didDrawPage: (data) => { currentY = data.cursor.y + 12; }
+          styles: { fontSize: 7, cellPadding: 1, halign: 'center' },
+          headStyles: { fillColor: [230, 230, 230], textColor: 0 },
+          didDrawPage: (data) => { currentY = data.cursor.y + 10; }
         });
-
-        doc.text("Officer Signature: ____________________", 130, currentY);
-        currentY += 15;
       });
 
-      doc.save("Legal_Diary_Report.pdf");
+      doc.save(`Diary_${selection.start || 'all'}.pdf`);
       setIsLoading(false);
     }, 100);
   };
 
   return (
     <div style={styles.container}>
-      {isLoading && <div style={styles.loader}>Generating PDF... Please Wait</div>}
       <div style={styles.card}>
-        <h2 style={{marginTop: 0}}>Court Diary Generator</h2>
+        <h2 style={{textAlign: 'center'}}>Diary Generator</h2>
+        
         <div style={styles.uploadArea}>
-            <input type="file" accept=".xlsx" onChange={handleFileUpload} />
-            {rawData.length > 0 && <p style={{color: 'green'}}>✓ {rawData.length} Records Loaded</p>}
+          <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload} />
+          {rawData.length > 0 && <p style={{color: 'green'}}>✓ {rawData.length} cases loaded</p>}
         </div>
 
         {rawData.length > 0 && (
           <div style={{marginTop: '20px'}}>
-            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+            <div style={styles.radioGroup}>
+              <label><input type="radio" checked={caseType === 'civil'} onChange={() => setCaseType('civil')} /> Civil</label>
+              <label><input type="radio" checked={caseType === 'criminal'} onChange={() => setCaseType('criminal')} /> Criminal</label>
+            </div>
+
+            <div style={{display: 'flex', gap: '5px', marginBottom: '10px'}}>
               <input type="date" style={styles.input} onChange={e => setSelection({...selection, start: e.target.value, all: false})} />
               <input type="date" style={styles.input} onChange={e => setSelection({...selection, end: e.target.value, all: false})} />
             </div>
-            <button 
-                onClick={() => setSelection({...selection, all: !selection.all})} 
-                style={selection.all ? styles.btnActive : styles.btnSec}
-            >
-              {selection.all ? "Custom Range Mode" : "Select All Records"}
+
+            <button onClick={() => setSelection({...selection, all: !selection.all})} style={selection.all ? styles.btnActive : styles.btnSec}>
+              {selection.all ? "Custom Dates ON" : "Show All Dates"}
             </button>
+
             <div style={styles.statBox}>
-              Selected: <b>{filteredData.length} Records</b>
+              Records in Range: <b>{filteredData.length}</b>
             </div>
+
             <button onClick={generatePDF} disabled={filteredData.length === 0} style={styles.btnPrimary}>
-              Download Professional PDF
+              Download PDF
             </button>
           </div>
         )}
@@ -152,15 +180,15 @@ const Kharda = () => {
 };
 
 const styles = {
-  container: { background: '#f4f4f9', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', fontFamily: 'Arial' },
-  card: { background: '#fff', padding: '30px', borderRadius: '12px', boxShadow: '0 5px 15px rgba(0,0,0,0.1)', width: '400px' },
-  loader: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(255,255,255,0.9)', zIndex: 100, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '20px', fontWeight: 'bold' },
-  uploadArea: { border: '2px dashed #ccc', padding: '20px', textAlign: 'center', borderRadius: '8px' },
-  input: { flex: 1, padding: '10px', borderRadius: '5px', border: '1px solid #ddd' },
-  btnPrimary: { width: '100%', padding: '15px', background: '#000', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' },
-  btnSec: { width: '100%', padding: '10px', background: '#fff', border: '1px solid #ddd', borderRadius: '8px', marginBottom: '10px', cursor: 'pointer' },
-  btnActive: { width: '100%', padding: '10px', background: '#e7f3ff', border: '1px solid #3498db', color: '#3498db', borderRadius: '8px', marginBottom: '10px', fontWeight: 'bold' },
-  statBox: { padding: '15px', background: '#f8f9fa', borderRadius: '8px', marginBottom: '15px', textAlign: 'center' }
+  container: { background: '#f0f2f5', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', fontFamily: 'sans-serif' },
+  card: { background: '#fff', padding: '25px', borderRadius: '10px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', width: '380px' },
+  radioGroup: { display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '15px' },
+  uploadArea: { border: '2px dashed #ccc', padding: '15px', textAlign: 'center', borderRadius: '5px' },
+  input: { flex: 1, padding: '8px', border: '1px solid #ddd', borderRadius: '4px' },
+  btnPrimary: { width: '100%', padding: '12px', background: '#000', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' },
+  btnSec: { width: '100%', padding: '10px', background: '#fff', border: '1px solid #ddd', borderRadius: '5px', marginBottom: '10px' },
+  btnActive: { width: '100%', padding: '10px', background: '#eef', border: '1px solid #3498db', borderRadius: '5px', marginBottom: '10px' },
+  statBox: { padding: '10px', background: '#f9f9f9', textAlign: 'center', marginBottom: '10px', borderRadius: '5px', border: '1px solid #eee' }
 };
 
-export default Kharda;
+export default CourtDiaryFinalFix;
