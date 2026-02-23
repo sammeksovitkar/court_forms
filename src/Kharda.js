@@ -80,7 +80,7 @@ const CourtDiaryFinalFix = () => {
     });
   }, [rawData, selection]); // Dependencies fixed
 
-  const generatePDF = () => {
+   const generatePDF = () => {
     if (filteredData.length === 0) return alert("No records selected!");
     setIsLoading(true);
     
@@ -88,6 +88,7 @@ const CourtDiaryFinalFix = () => {
       const doc = new jsPDF('p', 'mm', 'a4');
       let currentY = 15;
 
+      // Grouping logic remains the same
       const dateGroups = filteredData.reduce((acc, row) => {
         const dStr = row.nextDate.toLocaleDateString('en-GB').replace(/\//g, '-');
         if (!acc[dStr]) acc[dStr] = [];
@@ -95,20 +96,32 @@ const CourtDiaryFinalFix = () => {
         return acc;
       }, {});
 
-      Object.keys(dateGroups).forEach((dateKey) => {
+      // Sort dates chronologically
+      const sortedDates = Object.keys(dateGroups).sort((a, b) => {
+        return new Date(a.split('-').reverse().join('-')) - new Date(b.split('-').reverse().join('-'));
+      });
+
+      sortedDates.forEach((dateKey) => {
         const records = dateGroups[dateKey];
-        const stageGroups = { 'Judgment': [], 'Arguments': [], 'Hearing': [], 'Evidence': [], 'Evidence PH': [], 'Issues': [], 'Other': [] };
         
+        // 1. Get Day of the Week
+        const dateObj = records[0].nextDate;
+        const dayName = dateObj.toLocaleDateString('en-GB', { weekday: 'long' });
+
+        const stageGroups = { 'Judgment': [], 'Arguments': [], 'Hearing': [], 'Evidence': [], 'Evidence PH': [], 'Issues': [], 'Other': [] };
         records.forEach(r => {
           const cat = getStageCategory(r.purpose);
           stageGroups[cat].push(r.caseNum);
         });
 
         const maxRows = Math.max(...Object.values(stageGroups).map(arr => arr.length));
-        if (currentY + (maxRows * 8) > 270) { doc.addPage(); currentY = 15; }
+        
+        // Check for page break (including space for signature now)
+        if (currentY + (maxRows * 8) + 20 > 270) { doc.addPage(); currentY = 15; }
 
+        // 2. Display Date + Day
         doc.setFontSize(10).setFont("helvetica", "bold");
-        doc.text(`DATE: ${dateKey} (${caseType.toUpperCase()})`, 14, currentY);
+        doc.text(`DATE: ${dateKey} (${dayName.toUpperCase()}) - ${caseType.toUpperCase()}`, 14, currentY);
         currentY += 5;
 
         let head = [['Judgment', 'Arguments', 'Hearing', 'Evidence', 'Evid. PH']];
@@ -134,17 +147,24 @@ const CourtDiaryFinalFix = () => {
           head: head,
           body: body,
           theme: 'grid',
-          styles: { fontSize: 7, cellPadding: 1.5, halign: 'center' },
+          styles: { fontSize: 7, cellPadding: 1.5, halign: 'center', overflow: 'linebreak' },
           headStyles: { fillColor: [230, 230, 230], textColor: 0, lineWidth: 0.1 },
-          didDrawPage: (data) => { currentY = data.cursor.y + 10; }
+          didDrawPage: (data) => { 
+            currentY = data.cursor.y; 
+          }
         });
+
+        // 3. Add Signature Line after each table
+        currentY += 8;
+        doc.setFontSize(9).setFont("helvetica", "normal");
+        doc.text("Signature of Presiding Officer: __________________________", 120, currentY);
+        currentY += 15; // Extra spacing before the next date's table
       });
 
-      doc.save(`Compact_Diary_${caseType}.pdf`);
+      doc.save(`Diary_${caseType}_${new Date().getTime()}.pdf`);
       setIsLoading(false);
     }, 100);
   };
-
   return (
     <div style={styles.container}>
       {isLoading && <div style={styles.loader}>Generating...</div>}
