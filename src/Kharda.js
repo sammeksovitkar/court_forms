@@ -157,7 +157,7 @@ const CourtDiaryFinalFix = () => {
         // 3. Add Signature Line after each table
         currentY += 8;
         doc.setFontSize(9).setFont("helvetica", "normal");
-        doc.text("Signature of Presiding Officer: __________________________", 120, currentY);
+        doc.text("Signature of Presiding Officer: ________________", 120, currentY);
         currentY += 15; // Extra spacing before the next date's table
       });
 
